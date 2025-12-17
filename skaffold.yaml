@@ -32,7 +32,7 @@ build:
   - image: shoppingassistantservice
     context: src/shoppingassistantservice
   - image: shippingservice
-    context: src/shippingservice_connect
+    context: src/shippingservice_old
   - image: checkoutservice
     context: src/checkoutservice
   - image: paymentservice

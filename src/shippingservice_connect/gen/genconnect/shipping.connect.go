@@ -8,7 +8,7 @@ import (
 	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	gen "example/gen"
+	gen "shipping/gen"
 	http "net/http"
 	strings "strings"
 )
