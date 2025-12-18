@@ -25,7 +25,7 @@ resources:
  - paymentservice.yaml
  - productcatalogservice.yaml
  - recommendationservice.yaml
- - shippingservice.yaml
+ - shippingservice-connect.yaml
 # components:
 # - ../kustomize/components/cymbal-branding
 # - ../kustomize/components/google-cloud-operations

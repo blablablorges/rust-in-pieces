@@ -138,7 +138,7 @@ spec:
           - name: PRODUCT_CATALOG_SERVICE_ADDR
             value: "productcatalogservice:3550"
           - name: SHIPPING_SERVICE_ADDR
-            value: "shippingservice:50051"
+            value: "shippingservice-connect:50051"
           - name: PAYMENT_SERVICE_ADDR
             value: "paymentservice:50051"
           - name: EMAIL_SERVICE_ADDR
@@ -315,7 +315,7 @@ spec:
           - name: RECOMMENDATION_SERVICE_ADDR
             value: "recommendationservice:8080"
           - name: SHIPPING_SERVICE_ADDR
-            value: "shippingservice:50051"
+            value: "shippingservice-connect:50051"
           - name: CHECKOUT_SERVICE_ADDR
             value: "checkoutservice:5050"
           - name: AD_SERVICE_ADDR
@@ -833,19 +833,19 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: shippingservice
+  name: shippingservice-connect
   labels:
-    app: shippingservice
+    app: shippingservice-connect
 spec:
   selector:
     matchLabels:
-      app: shippingservice
+      app: shippingservice-connect
   template:
     metadata:
       labels:
-        app: shippingservice
+        app: shippingservice-connect
     spec:
-      serviceAccountName: shippingservice
+      serviceAccountName: shippingservice-connect
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -868,13 +868,8 @@ spec:
           value: "50051"
         - name: DISABLE_PROFILER
           value: "1"
-        readinessProbe:
-          periodSeconds: 5
-          grpc:
-            port: 50051
-        livenessProbe:
-          grpc:
-            port: 50051
+        readinessProbe: null
+        livenessProbe: null
         resources:
           requests:
             cpu: 100m
@@ -886,13 +881,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: shippingservice
+  name: shippingservice-connect
   labels:
-    app: shippingservice
+    app: shippingservice-connect
 spec:
   type: ClusterIP
   selector:
-    app: shippingservice
+    app: shippingservice-connect
   ports:
   - name: grpc
     port: 50051
@@ -901,7 +896,7 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: shippingservice
+  name: shippingservice-connect
 ---
 apiVersion: apps/v1
 kind: Deployment

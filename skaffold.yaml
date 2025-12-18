@@ -31,8 +31,8 @@ build:
     context: src/recommendationservice
   - image: shoppingassistantservice
     context: src/shoppingassistantservice
-  - image: shippingservice
-    context: src/shippingservice_old
+  - image: shippingservice-connect
+    context: src/shippingservice-connect
   - image: checkoutservice
     context: src/checkoutservice
   - image: paymentservice
