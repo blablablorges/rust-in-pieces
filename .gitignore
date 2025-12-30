@@ -10,6 +10,16 @@
 .venv/
 .vs/
 .vscode/
+.devcontainer/
+.deploystack/
+.github/
+.gitattributes
+.editorconfig
+helm-chart/*
+istio-manifests/*
+kustomize/*
+terraform/*
+release/istio-manifests.yaml
 *.iml
 *.ipr
 *.iws
