@@ -1,1 +1,0 @@
-/workspaces/microservices-demo/src/shippingservice/target/debug/shipping-client: /workspaces/microservices-demo/src/shippingservice/build.rs /workspaces/microservices-demo/src/shippingservice/src/client.rs /workspaces/microservices-demo/src/shippingservice/target/debug/build/shippingservice-54cd7faeec5db0d6/out/hipstershop.rs
