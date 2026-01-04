@@ -1,0 +1,37 @@
+[package]
+name = "shippingserwasm"
+version = "0.1.0"
+edition = "2021"
+autobins = false
+
+[[bin]]
+name = "serve"
+path = "bin/serve.rs"
+
+[lib]
+crate-type = ["cdylib"]
+name = "shippingserwasm"  # This will produce shippingserwasm.wasm
+path = "src/main.rs"  
+
+[dependencies]
+tonic = { version = "0.13.1", features = ["codegen", "prost", "router"], default-features = false}
+prost = "0.13.5"
+wasi-grpc-server = { path = "./lib/wasi-grpc-server" }
+wasi = "0.13.1"
+wasi-hyperium = "0.3.0"
+fastrand = "2.0"
+
+# Dependencies ONLY for the server binary (native target)
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+anyhow = "1.0"
+tokio = { version = "1.35", features = ["full"] }
+wasmtime = { version = "27.0", features = ["component-model", "async"] }
+wasmtime-wasi = "27.0"
+wasmtime-wasi-http = "27.0"
+hyper = { version = "1.0", features = ["full"] }
+hyper-util = { version = "0.1", features = ["full"] }
+
+
+[build-dependencies]
+tonic-build = { version = "0.13.1", features = ["prost"] }
+
