@@ -1,10 +1,4 @@
-<!-- <p align="center">
-<img src="/src/frontend/static/icons/Hipster_HeroLogoMaroon.svg" width="300" alt="Online Boutique" />
-</p> -->
-![Continuous Integration](https://github.com/GoogleCloudPlatform/microservices-demo/workflows/Continuous%20Integration%20-%20Main/Release/badge.svg)
 
-
-**Note to Googlers:** Please fill out the form at [go/microservices-demo](http://go/microservices-demo).
 
 ## Architecture
 
