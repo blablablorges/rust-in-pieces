@@ -81,20 +81,19 @@ fn create_quote_from_float(value: f64) -> Quote {
 }
 
 
-fn create_tracking_id(_salt: &str) -> String {
-    String::from("AB-25123-121234567")
-/*     format!(
+fn create_tracking_id(salt: &str) -> String {
+    format!(
         "{}{}-{}{}-{}{}",
-        get_random_letter_code(),
+        "ISE",
         get_random_letter_code(),
         salt.len(),
         get_random_number(3),
         salt.len() / 2,
         get_random_number(7)
-    ) */
+    ) 
 }
 
-/* fn get_random_letter_code() -> char {
+fn get_random_letter_code() -> char {
     let code = 65 + fastrand::u32(0..26);
     char::from_u32(code).unwrap()
 }
@@ -103,4 +102,4 @@ fn get_random_number(digits: usize) -> String {
     (0..digits)
         .map(|_| fastrand::u32(0..10).to_string())
         .collect()
-} */
+} 

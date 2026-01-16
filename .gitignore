@@ -36,5 +36,5 @@ obj/
 pkg/
 release/wi-kubernetes-manifests.yaml
 vendor/
-src/shippingservice/target/*
-src/shippingserwasm/target/*
+target/
+*.code-workspace

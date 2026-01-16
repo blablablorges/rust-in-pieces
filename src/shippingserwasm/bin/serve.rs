@@ -157,7 +157,7 @@ async fn main() -> Result<()> {
     let server = Server { pre };
 
     // Bind to the address
-    let addr = "shippingservice:50051";
+    let addr = "0.0.0.0:50051";
     let listener = TcpListener::bind(addr).await?;
     println!("Server listening on http://{}", addr);
 

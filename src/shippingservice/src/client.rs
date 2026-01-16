@@ -1,3 +1,4 @@
+use std::env;
 use tonic::Request;
 
 pub mod hipstershop {
@@ -10,7 +11,12 @@ use hipstershop::{GetQuoteRequest, ShipOrderRequest, CartItem, Address};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = ShippingServiceClient::connect("http://[::1]:50051").await?;
+    let addr = env::var("SHIPPING_ADDR")
+        .ok()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or_else(|| "http://127.0.0.1:50051".to_string());
+
+    let mut client = ShippingServiceClient::connect(addr).await?;
 
     println!("*** SIMPLE RPC ***");
     let response = client
