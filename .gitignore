@@ -38,3 +38,4 @@ release/wi-kubernetes-manifests.yaml
 vendor/
 target/
 *.code-workspace
+shippingserwasm.wasm

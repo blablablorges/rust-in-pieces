@@ -34,6 +34,29 @@ impl ShippingService for ShippingServiceImpl {
                 nanos: quote.cents as i32 * NANOS_MULTIPLE as i32,
             }),
         };
+
+        // pick a random number above 100000 and below 999999 for the quote ID
+        let quote_id = 100000 + fastrand::u32(0..899999);
+        // check that the id is prime, fast prime algorithm
+        fn is_prime(n: u32) -> bool {
+            if n <= 1 {
+                return false;
+            }
+            for i in 2..=((n as f64).sqrt() as u32) {
+                if n % i == 0 {
+                    return false;
+                }
+            }
+            true
+        }   
+
+        if !is_prime(quote_id) {
+            println!("Generated quote ID {} is not prime!", quote_id);
+        } else {
+            println!("Generated quote ID {} is prime.", quote_id);
+        }
+
+
         Ok(Response::new(quote_response))
     }
 
