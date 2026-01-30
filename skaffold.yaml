@@ -57,7 +57,7 @@ build:
 manifests:
   kustomize:
     paths:
-    - kubernetes-manifests
+    - kustomize
 deploy:
   kubectl: {}
 profiles:
@@ -71,36 +71,23 @@ profiles:
 # The "network-policies" profile is not used by default.
 # You can use it in isolation or in combination with other profiles:
 #     skaffold run -p network-policies, debug
-- name: network-policies
+- name: registry
   patches:
   - op: add
     path: /manifests/kustomize/paths/1
-    value: kustomize/components/network-policies
----
-apiVersion: skaffold/v3
-kind: Config
-metadata:
-  name: loadgenerator
-requires:
-- configs:
-  - app
-build:
-  platforms: ["linux/amd64", "linux/arm64"]
-  artifacts:
-  - image: loadgenerator
-    context: src/loadgenerator
-  local:
-    useDockerCLI: true
-    useBuildkit: true
-manifests:
-  rawYaml:
-  - ./kubernetes-manifests/loadgenerator.yaml
-deploy:
-  kubectl: {}
-profiles:
-- name: gcb
-  build:
-    googleCloudBuild:
-      diskSizeGb: 300
-      machineType: N1_HIGHCPU_32
-      timeout: 4000s
+    value: kustomize/components/container-images-registry
+- name: baseline
+  patches:
+  - op: add
+    path: /manifests/kustomize/paths/1
+    value: kustomize/components/with-shipping-docker
+- name: wasi-runtime
+  patches:
+  - op: add 
+    path: /manifests/kustomize/paths/1
+    value: kustomize/components/with-shipping-wasm
+- name: kirin-runtime
+  patches:
+  - op: add
+    path: /manifests/kustomize/paths/1
+    value: kustomize/components/with-shipping-external

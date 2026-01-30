@@ -83,16 +83,16 @@ fn create_quote_from_float(value: f64) -> Quote {
 
 fn create_tracking_id(salt: &str) -> String {
     let mut rng = rand::thread_rng();
-    
+
     format!(
         "{}{}-{}{}-{}{}",
-        get_random_letter_code(&mut rng),
+        "KUB",
         get_random_letter_code(&mut rng),
         salt.len(),
         get_random_number(&mut rng, 3),
         salt.len() / 2,
         get_random_number(&mut rng, 7)
-    )
+    ) 
 }
 
 fn get_random_letter_code(rng: &mut impl Rng) -> char {

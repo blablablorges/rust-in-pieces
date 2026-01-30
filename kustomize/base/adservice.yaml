@@ -15,19 +15,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: productcatalogservice
+  name: adservice
   labels:
-    app: productcatalogservice
+    app: adservice
 spec:
   selector:
     matchLabels:
-      app: productcatalogservice
+      app: adservice
   template:
     metadata:
       labels:
-        app: productcatalogservice
+        app: adservice
     spec:
-      serviceAccountName: productcatalogservice
+      serviceAccountName: adservice
       terminationGracePeriodSeconds: 5
       securityContext:
         fsGroup: 1000
@@ -43,44 +43,46 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: productcatalogservice
+        image: us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice:v0.10.4
         ports:
-        - containerPort: 3550
+        - containerPort: 9555
         env:
         - name: PORT
-          value: "3550"
-        - name: DISABLE_PROFILER
-          value: "1"
-        readinessProbe:
-          grpc:
-            port: 3550
-        livenessProbe:
-          grpc:
-            port: 3550
+          value: "9555"
         resources:
           requests:
-            cpu: 100m
-            memory: 64Mi
-          limits:
             cpu: 200m
-            memory: 128Mi
+            memory: 180Mi
+          limits:
+            cpu: 300m
+            memory: 300Mi
+        readinessProbe:
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          grpc:
+            port: 9555
+        livenessProbe:
+          initialDelaySeconds: 20
+          periodSeconds: 15
+          grpc:
+            port: 9555
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: productcatalogservice
+  name: adservice
   labels:
-    app: productcatalogservice
+    app: adservice
 spec:
   type: ClusterIP
   selector:
-    app: productcatalogservice
+    app: adservice
   ports:
   - name: grpc
-    port: 3550
-    targetPort: 3550
+    port: 9555
+    targetPort: 9555
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: productcatalogservice
+  name: adservice

@@ -35,28 +35,6 @@ impl ShippingService for ShippingServiceImpl {
             }),
         };
 
-        // pick a random number above 100000 and below 999999 for the quote ID
-        let quote_id = 100000 + fastrand::u32(0..899999);
-        // check that the id is prime, fast prime algorithm
-        fn is_prime(n: u32) -> bool {
-            if n <= 1 {
-                return false;
-            }
-            for i in 2..=((n as f64).sqrt() as u32) {
-                if n % i == 0 {
-                    return false;
-                }
-            }
-            true
-        }   
-
-        if !is_prime(quote_id) {
-            println!("Generated quote ID {} is not prime!", quote_id);
-        } else {
-            println!("Generated quote ID {} is prime.", quote_id);
-        }
-
-
         Ok(Response::new(quote_response))
     }
 
@@ -105,6 +83,9 @@ fn create_quote_from_float(value: f64) -> Quote {
 
 
 fn create_tracking_id(salt: &str) -> String {
+    // pick a random number above 100000 and below 999999 for the quote ID
+    let quote_id = 1000000 + fastrand::u32(0..899999);
+    
     format!(
         "{}{}-{}{}-{}{}",
         "ISE",
@@ -112,7 +93,7 @@ fn create_tracking_id(salt: &str) -> String {
         salt.len(),
         get_random_number(3),
         salt.len() / 2,
-        get_random_number(7)
+        quote_id
     ) 
 }
 

@@ -1,0 +1,41 @@
+# Copyright 2022 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+images:
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice
+  newName: tawalaya/adservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/cartservice
+  newName: tawalaya/cartservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice
+  newName: tawalaya/checkoutservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/currencyservice
+  newName: tawalaya/currencyservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/emailservice
+  newName: tawalaya/emailservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/frontend
+  newName: tawalaya/frontend
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/loadgenerator
+  newName: tawalaya/loadgenerator
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/paymentservice
+  newName: tawalaya/paymentservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice
+  newName: tawalaya/productcatalogservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice
+  newName: tawalaya/recommendationservice
+- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
+  newName: tawalaya/shippingservice
+- name: redis
+  newName: tawalaya/redis

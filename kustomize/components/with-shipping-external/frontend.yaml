@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: SHIPPING_SERVICE_ADDR
+          value: "130.149.158.32:51010"

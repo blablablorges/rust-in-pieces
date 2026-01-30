@@ -11,24 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: adservice
+  name: shippingservice
   labels:
-    app: adservice
+    app: shippingservice
 spec:
   selector:
     matchLabels:
-      app: adservice
+      app: shippingservice
   template:
     metadata:
       labels:
-        app: adservice
+        app: shippingservice
     spec:
-      serviceAccountName: adservice
-      terminationGracePeriodSeconds: 5
+      serviceAccountName: shippingservice
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000
@@ -43,46 +41,38 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: adservice
+        image: ghcr.io/containerd/docker/shippingservice:prime
+        imagePullPolicy: Never
         ports:
-        - containerPort: 9555
+        - containerPort: 50051
         env:
-        - name: PORT
-          value: "9555"
+        - name: SHIPPING_PORT
+          value: "50051"
         resources:
           requests:
-            cpu: 200m
-            memory: 180Mi
+            cpu: 256m
+            memory: 128Mi
           limits:
-            cpu: 300m
-            memory: 300Mi
-        readinessProbe:
-          initialDelaySeconds: 20
-          periodSeconds: 15
-          grpc:
-            port: 9555
-        livenessProbe:
-          initialDelaySeconds: 20
-          periodSeconds: 15
-          grpc:
-            port: 9555
+            cpu: 500m
+            memory: 264Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: adservice
+  name: shippingservice
   labels:
-    app: adservice
+    app: shippingservice
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
-    app: adservice
+    app: shippingservice
   ports:
   - name: grpc
-    port: 9555
-    targetPort: 9555
+    port: 50051
+    targetPort: 50051
+    nodePort: 30051
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: adservice
+  name: shippingservice

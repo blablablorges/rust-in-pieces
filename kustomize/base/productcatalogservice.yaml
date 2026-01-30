@@ -15,19 +15,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: emailservice
+  name: productcatalogservice
   labels:
-    app: emailservice
+    app: productcatalogservice
 spec:
   selector:
     matchLabels:
-      app: emailservice
+      app: productcatalogservice
   template:
     metadata:
       labels:
-        app: emailservice
+        app: productcatalogservice
     spec:
-      serviceAccountName: emailservice
+      serviceAccountName: productcatalogservice
       terminationGracePeriodSeconds: 5
       securityContext:
         fsGroup: 1000
@@ -43,22 +43,20 @@ spec:
               - ALL
           privileged: false
           readOnlyRootFilesystem: true
-        image: emailservice
+        image: us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice:v0.10.4
         ports:
-        - containerPort: 8080
+        - containerPort: 3550
         env:
         - name: PORT
-          value: "8080"
+          value: "3550"
         - name: DISABLE_PROFILER
           value: "1"
         readinessProbe:
-          periodSeconds: 5
           grpc:
-            port: 8080
+            port: 3550
         livenessProbe:
-          periodSeconds: 5
           grpc:
-            port: 8080
+            port: 3550
         resources:
           requests:
             cpu: 100m
@@ -70,19 +68,19 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: emailservice
+  name: productcatalogservice
   labels:
-    app: emailservice
+    app: productcatalogservice
 spec:
   type: ClusterIP
   selector:
-    app: emailservice
+    app: productcatalogservice
   ports:
   - name: grpc
-    port: 5000
-    targetPort: 8080
+    port: 3550
+    targetPort: 3550
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: emailservice
+  name: productcatalogservice
