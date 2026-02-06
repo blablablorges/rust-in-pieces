@@ -91,3 +91,8 @@ profiles:
   - op: add
     path: /manifests/kustomize/paths/1
     value: kustomize/components/with-shipping-external
+- name: fixed-node
+  patches:
+  - op: add
+    path: /manifests/kustomize/paths/1
+    value: kustomize/components/with-node-selector
