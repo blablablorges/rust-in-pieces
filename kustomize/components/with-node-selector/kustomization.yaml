@@ -17,11 +17,4 @@ kind: Component
 patches:
 - target:
     kind: Deployment
-  patch: |-
-    apiVersion: apps/v1
-    kind: Deployment
-    spec:
-      template:
-        spec:
-          nodeSelector:
-            kubernetes.io/hostname: gisele
+  path: node.yaml

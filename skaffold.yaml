@@ -25,35 +25,67 @@ build:
   # https://skaffold.dev/docs/concepts/#image-repository-handling
   - image: emailservice
     context: src/emailservice
+    docker:
+      cacheFrom:
+        - emailservice
   - image: productcatalogservice
     context: src/productcatalogservice
+    docker:
+      cacheFrom:
+        - productcatalogservice
   - image: recommendationservice
     context: src/recommendationservice
+    docker:
+      cacheFrom:
+        - recommendationservice
   - image: shoppingassistantservice
     context: src/shoppingassistantservice
+    docker:
+      cacheFrom:
+        - shoppingassistantservice
   - image: shippingservice
     context: .
     docker:
       dockerfile: src/shippingservice/Dockerfile
+      cacheFrom:
+        - shippingservice
   - image: checkoutservice
     context: src/checkoutservice
+    docker:
+      cacheFrom:
+        - checkoutservice
   - image: paymentservice
     context: src/paymentservice
+    docker:
+      cacheFrom:
+        - paymentservice
   - image: currencyservice
     context: src/currencyservice
+    docker:
+      cacheFrom:
+        - currencyservice
   - image: cartservice
     context: src/cartservice/src
     docker:
       dockerfile: Dockerfile
+      cacheFrom:
+        - adservice
   - image: frontend
     context: src/frontend
+    docker:
+      cacheFrom:
+        - frontend
   - image: adservice
     context: src/adservice
+    docker:
+      cacheFrom:
+        - adservice
   tagPolicy:
     gitCommit: {}
   local:
     useDockerCLI: true
     useBuildkit: true
+    tryImportMissing: true
 manifests:
   kustomize:
     paths:
@@ -71,11 +103,6 @@ profiles:
 # The "network-policies" profile is not used by default.
 # You can use it in isolation or in combination with other profiles:
 #     skaffold run -p network-policies, debug
-- name: registry
-  patches:
-  - op: add
-    path: /manifests/kustomize/paths/1
-    value: kustomize/components/container-images-registry
 - name: baseline
   patches:
   - op: add

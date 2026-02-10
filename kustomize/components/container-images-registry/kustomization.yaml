@@ -35,7 +35,3 @@ images:
   newName: tawalaya/productcatalogservice
 - name: us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice
   newName: tawalaya/recommendationservice
-- name: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice
-  newName: tawalaya/shippingservice
-- name: redis
-  newName: tawalaya/redis
