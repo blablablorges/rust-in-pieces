@@ -1,4 +1,4 @@
-FROM rust:1.83 AS builder
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.83 AS builder
 
 WORKDIR /usr/src/app
 
@@ -17,7 +17,7 @@ COPY src/shippingservice/src ./src
 RUN cargo build --release --bin shipping-server
 
 # Runtime stage
-FROM debian:bookworm-slim
+FROM mirror.gcr.io/debian:bookworm-slim
 
 # Install necessary runtime dependencies
 RUN apt-get update && apt-get install -y \

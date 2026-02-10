@@ -17,4 +17,5 @@ kind: Kustomization
 resources:
 - base
 components:
-- components/with-node-selector
+- components/container-pull-secrets
+# - components/with-node-selector
