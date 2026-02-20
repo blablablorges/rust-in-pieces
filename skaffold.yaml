@@ -69,7 +69,7 @@ build:
     docker:
       dockerfile: Dockerfile
       cacheFrom:
-        - adservice
+        - cartservice
   - image: frontend
     context: src/frontend
     docker:
@@ -105,21 +105,16 @@ profiles:
 #     skaffold run -p network-policies, debug
 - name: baseline
   patches:
-  - op: add
-    path: /manifests/kustomize/paths/1
-    value: kustomize/components/with-shipping-docker
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/baseline
 - name: wasi-runtime
   patches:
-  - op: add 
-    path: /manifests/kustomize/paths/1
-    value: kustomize/components/with-shipping-wasm
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/wasi-runtime
 - name: kirin-runtime
   patches:
-  - op: add
-    path: /manifests/kustomize/paths/1
-    value: kustomize/components/with-shipping-external
-- name: fixed-node
-  patches:
-  - op: add
-    path: /manifests/kustomize/paths/1
-    value: kustomize/components/with-node-selector
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/with-external

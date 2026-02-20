@@ -12,4 +12,4 @@ spec:
       - name: server
         env:
         - name: SHIPPING_SERVICE_ADDR
-          value: "shippingservice:50051"
+          value: "shippingservice:8080"

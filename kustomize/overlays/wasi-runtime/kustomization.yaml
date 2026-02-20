@@ -1,0 +1,11 @@
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base          # or ../../base if you have a base folder
+
+components:
+  - ../../components/with-shipping-wasm
+  - ../../components/with-node-selector
+  - ../../components/container-pull-secrets

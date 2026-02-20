@@ -3,13 +3,7 @@ kind: Deployment
 metadata:
   name: placeholder
 spec:
-  selector:
-    matchLabels:
-      app: placeholder
   template:
-    metadata:
-      labels:
-        app: placeholder
     spec:
       nodeSelector:
        kubernetes.io/hostname: gisele

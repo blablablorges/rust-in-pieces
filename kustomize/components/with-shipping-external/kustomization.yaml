@@ -23,3 +23,8 @@ patches:
   target:
     kind: Deployment
     name: frontend
+- path: shippingservice.yaml
+  target:
+    kind: Deployment
+    name: shippingservice
+
