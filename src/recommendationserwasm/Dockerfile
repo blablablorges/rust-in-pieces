@@ -13,18 +13,19 @@
 # limitations under the License.
 
 # ---------- Stage 1: Build the WASM component and native server ----------
-FROM rust:1.82-bookworm AS builder
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.85-bookworm AS builder
+
+RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
 # Install the wasm32-wasip2 target
 RUN rustup target add wasm32-wasip2
 
-WORKDIR /build
 
 # Copy proto definitions
-COPY protos/ protos/
+COPY protos /build/protos
 
 # Copy the service source
-COPY src/recommendationserwasm/ src/recommendationserwasm/
+COPY src/recommendationserwasm/ /build/src/recommendationserwasm/
 
 WORKDIR /build/src/recommendationserwasm
 
@@ -36,7 +37,7 @@ RUN cargo build --lib --target wasm32-wasip2 --release && \
 RUN cargo build --bin serve --release
 
 # ---------- Stage 2: Minimal runtime image ----------
-FROM debian:bookworm-slim
+FROM mirror.gcr.io/debian:bookworm-slim
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates && \

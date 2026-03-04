@@ -23,4 +23,3 @@ resources:
 - frontend.yaml
 - paymentservice.yaml
 - productcatalogservice.yaml
-- recommendationservice.yaml

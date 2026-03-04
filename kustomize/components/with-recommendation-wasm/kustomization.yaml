@@ -20,5 +20,5 @@ patches:
     kind: Deployment
     name: frontend
 resources:
-- shippingservice-wasm.yaml
+- recommendationservice-wasm.yaml
 

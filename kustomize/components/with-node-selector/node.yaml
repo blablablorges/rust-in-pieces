@@ -6,4 +6,5 @@ spec:
   template:
     spec:
       nodeSelector:
-       kubernetes.io/hostname: gisele
+        role: sut
+        runtime: wasmtime

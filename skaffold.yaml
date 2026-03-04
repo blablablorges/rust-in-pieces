@@ -33,11 +33,12 @@ build:
     docker:
       cacheFrom:
         - productcatalogservice
-  - image: recommendationserwasm
-    context: src/recommendationserwasm
+  - image: recommendationservice
+    context: .
     docker:
+      dockerfile: src/recommendationserwasm/Dockerfile
       cacheFrom:
-        - recommendationserwasm
+        - recommendationservice
   - image: shoppingassistantservice
     context: src/shoppingassistantservice
     docker:
