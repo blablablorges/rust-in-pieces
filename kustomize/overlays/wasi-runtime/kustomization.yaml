@@ -7,5 +7,6 @@ resources:
 
 components:
   - ../../components/with-shipping-wasm
+  - ../../components/with-recommendation-docker
   - ../../components/with-node-selector
   - ../../components/container-pull-secrets

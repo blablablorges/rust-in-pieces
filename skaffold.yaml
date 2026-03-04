@@ -33,11 +33,11 @@ build:
     docker:
       cacheFrom:
         - productcatalogservice
-  - image: recommendationservice
-    context: src/recommendationservice
+  - image: recommendationserwasm
+    context: src/recommendationserwasm
     docker:
       cacheFrom:
-        - recommendationservice
+        - recommendationserwasm
   - image: shoppingassistantservice
     context: src/shoppingassistantservice
     docker:
@@ -118,3 +118,8 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/with-external
+- name: wasi-runtime-full
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/wasi-runtime-full
