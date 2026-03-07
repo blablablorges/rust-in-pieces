@@ -57,6 +57,8 @@ impl RecommendationService for RecommendationServiceImpl {
 /// Make an outgoing gRPC call to ProductCatalogService.ListProducts
 /// using the WASI HTTP outgoing handler.
 fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
+    println!("[DEBUG] call_list_products: addr={}", addr);
+
     // Encode Empty message as protobuf
     let empty = Empty {};
     let mut proto_buf = Vec::new();
@@ -90,8 +92,10 @@ fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
         .map_err(|_| "get write stream failed".to_string())?;
 
     // Send the request via WASI outgoing handler
+    println!("[DEBUG] calling wasi::http::outgoing_handler::handle (scheme=Http, authority={}, path=/hipstershop.ProductCatalogService/ListProducts)", addr);
     let future_response = wasi::http::outgoing_handler::handle(request, None)
         .map_err(|e| format!("outgoing handle error: {:?}", e))?;
+    println!("[DEBUG] handle() succeeded, writing {} bytes of gRPC frame", grpc_frame.len());
 
     // Write the gRPC request body
     stream.blocking_write_and_flush(&grpc_frame)
@@ -99,15 +103,21 @@ fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
     drop(stream);
     wasi::http::types::OutgoingBody::finish(body, None)
         .map_err(|e| format!("finish body error: {:?}", e))?;
+    println!("[DEBUG] body finished, waiting for response...");
 
     // Wait for the response
     let pollable = future_response.subscribe();
     pollable.block();
+    println!("[DEBUG] pollable resolved, calling future_response.get()");
 
-    let response = future_response.get()
+    let get_result = future_response.get();
+    println!("[DEBUG] get() returned: {:?}", get_result.as_ref().map(|r| r.as_ref().map(|r2| r2.as_ref().map(|resp| resp.status()).map_err(|e| format!("{:?}", e))).map_err(|_| "future err")));
+
+    let response = get_result
         .ok_or_else(|| "no response ready".to_string())?
         .map_err(|_| "future error".to_string())?
         .map_err(|e| format!("response error: {:?}", e))?;
+    println!("[DEBUG] got response, status={}", response.status());
 
     let status = response.status();
     if status != 200 {

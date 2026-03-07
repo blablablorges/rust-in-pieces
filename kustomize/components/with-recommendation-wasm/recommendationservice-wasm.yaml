@@ -59,6 +59,8 @@ spec:
           value: "128"
         - name: WASMTIME_HTTP_PROXY_SERVER_MODE
           value: h2
+        - name: WASMTIME_HTTP_PROXY_OUTGOING_H2C
+          value: "true"
         resources:
           requests:
             cpu: 100m
