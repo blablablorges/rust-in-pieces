@@ -8,6 +8,10 @@ autobins = false
 name = "serve"
 path = "bin/serve.rs"
 
+[[bin]]
+name = "server"
+path = "bin/server.rs"
+
 [lib]
 crate-type = ["cdylib"]
 name = "recommendationserwasm"
@@ -32,6 +36,8 @@ hyper = { version = "1.0", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 http = "1.0"
 http-body-util = "0.1"
+tonic = { version = "0.13.1", features = ["transport"] }
+tonic-health = "0.13.1"
 
 [build-dependencies]
 tonic-build = { version = "0.13.1", features = ["prost"] }

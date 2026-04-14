@@ -27,7 +27,7 @@ release/istio-manifests.yaml
 *.tfstate*
 *.tfvars
 *~
-bin/
+!bin/*.rs
 build/
 Dockerfile.pip
 node_modules/

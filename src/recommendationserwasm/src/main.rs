@@ -1,12 +1,35 @@
-use tonic::{Request, Response, Status};
 use prost::Message;
+use tonic::{Request, Response, Status};
 
 pub mod hipstershop {
     tonic::include_proto!("hipstershop");
 }
 
+mod core;
+
+use core::CatalogClient;
 use hipstershop::recommendation_service_server::{RecommendationService, RecommendationServiceServer};
-use hipstershop::{ListRecommendationsRequest, ListRecommendationsResponse, Empty, ListProductsResponse};
+use hipstershop::{Empty, ListProductsResponse, ListRecommendationsRequest, ListRecommendationsResponse};
+
+// ---------------------------------------------------------------------------
+// WASI catalog adapter — makes an outgoing HTTP/2 gRPC call via wasi:http
+// ---------------------------------------------------------------------------
+
+struct WasiCatalogClient {
+    addr: String,
+}
+
+#[tonic::async_trait]
+impl CatalogClient for WasiCatalogClient {
+    async fn list_product_ids(&self) -> Result<Vec<String>, String> {
+        let resp = call_list_products(&self.addr)?;
+        Ok(resp.products.into_iter().map(|p| p.id).collect())
+    }
+}
+
+// ---------------------------------------------------------------------------
+// gRPC component — delegates entirely to core logic
+// ---------------------------------------------------------------------------
 
 #[wasi_grpc_server::grpc_component(RecommendationServiceServer)]
 struct RecommendationServiceImpl;
@@ -17,117 +40,87 @@ impl RecommendationService for RecommendationServiceImpl {
         &self,
         request: Request<ListRecommendationsRequest>,
     ) -> Result<Response<ListRecommendationsResponse>, Status> {
-        let req = request.get_ref();
-
-        // Call ProductCatalogService to get all products
-        let catalog_addr = std::env::var("PRODUCT_CATALOG_SERVICE_ADDR")
+        let addr = std::env::var("PRODUCT_CATALOG_SERVICE_ADDR")
             .unwrap_or_else(|_| "localhost:3550".to_string());
-
-        let products = match call_list_products(&catalog_addr) {
-            Ok(p) => p,
-            Err(e) => {
-                println!("[ERROR] Failed to call product catalog: {}", e);
-                return Err(Status::internal(format!("Failed to call product catalog: {}", e)));
-            }
-        };
-
-        // Get all product IDs
-        let product_ids: Vec<String> = products.products.iter().map(|p| p.id.clone()).collect();
-
-        // Filter out products already in the request
-        let filtered: Vec<String> = product_ids
-            .into_iter()
-            .filter(|id| !req.product_ids.contains(id))
-            .collect();
-
-        // Randomly select up to 5 products
-        let max_responses = 5;
-        let num_return = std::cmp::min(max_responses, filtered.len());
-        let indices = random_sample_indices(filtered.len(), num_return);
-        let selected: Vec<String> = indices.into_iter().map(|i| filtered[i].clone()).collect();
-
-        println!("[Recv ListRecommendations] product_ids={:?}", selected);
-
-        Ok(Response::new(ListRecommendationsResponse {
-            product_ids: selected,
-        }))
+        let client = WasiCatalogClient { addr };
+        core::list_recommendations(&client, request.get_ref())
+            .await
+            .map(Response::new)
     }
 }
 
-/// Make an outgoing gRPC call to ProductCatalogService.ListProducts
-/// using the WASI HTTP outgoing handler.
+// ---------------------------------------------------------------------------
+// WASI HTTP outgoing call to ProductCatalogService (WASI-specific, stays here)
+// ---------------------------------------------------------------------------
+
 fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
     println!("[DEBUG] call_list_products: addr={}", addr);
 
-    // Encode Empty message as protobuf
     let empty = Empty {};
     let mut proto_buf = Vec::new();
-    empty.encode(&mut proto_buf).map_err(|e| format!("encode error: {}", e))?;
+    empty
+        .encode(&mut proto_buf)
+        .map_err(|e| format!("encode error: {}", e))?;
 
-    // gRPC framing: 1 byte compressed flag (0) + 4 bytes big-endian length + protobuf message
     let mut grpc_frame = Vec::with_capacity(5 + proto_buf.len());
     grpc_frame.push(0u8);
     grpc_frame.extend_from_slice(&(proto_buf.len() as u32).to_be_bytes());
     grpc_frame.extend_from_slice(&proto_buf);
 
-    // Build outgoing HTTP request headers
     let headers = wasi::http::types::Fields::new();
-    headers.append(&"content-type".into(), &b"application/grpc".to_vec())
+    headers
+        .append(&"content-type".into(), &b"application/grpc".to_vec())
         .map_err(|e| format!("set content-type error: {:?}", e))?;
 
     let request = wasi::http::types::OutgoingRequest::new(headers);
-    request.set_method(&wasi::http::types::Method::Post)
+    request
+        .set_method(&wasi::http::types::Method::Post)
         .map_err(|()| "set method failed".to_string())?;
-    request.set_scheme(Some(&wasi::http::types::Scheme::Http))
+    request
+        .set_scheme(Some(&wasi::http::types::Scheme::Http))
         .map_err(|()| "set scheme failed".to_string())?;
-    request.set_authority(Some(addr))
+    request
+        .set_authority(Some(addr))
         .map_err(|()| "set authority failed".to_string())?;
-    request.set_path_with_query(Some("/hipstershop.ProductCatalogService/ListProducts"))
+    request
+        .set_path_with_query(Some("/hipstershop.ProductCatalogService/ListProducts"))
         .map_err(|()| "set path failed".to_string())?;
 
-    // Get body and write stream BEFORE calling handle
-    let body = request.body()
+    let body = request
+        .body()
         .map_err(|_| "get body failed".to_string())?;
-    let stream = body.write()
-        .map_err(|_| "get write stream failed".to_string())?;
+    let stream = body.write().map_err(|_| "get write stream failed".to_string())?;
 
-    // Send the request via WASI outgoing handler
-    println!("[DEBUG] calling wasi::http::outgoing_handler::handle (scheme=Http, authority={}, path=/hipstershop.ProductCatalogService/ListProducts)", addr);
+    println!("[DEBUG] calling wasi::http::outgoing_handler::handle");
     let future_response = wasi::http::outgoing_handler::handle(request, None)
         .map_err(|e| format!("outgoing handle error: {:?}", e))?;
-    println!("[DEBUG] handle() succeeded, writing {} bytes of gRPC frame", grpc_frame.len());
 
-    // Write the gRPC request body
-    stream.blocking_write_and_flush(&grpc_frame)
+    stream
+        .blocking_write_and_flush(&grpc_frame)
         .map_err(|e| format!("write error: {:?}", e))?;
     drop(stream);
     wasi::http::types::OutgoingBody::finish(body, None)
         .map_err(|e| format!("finish body error: {:?}", e))?;
-    println!("[DEBUG] body finished, waiting for response...");
 
-    // Wait for the response
     let pollable = future_response.subscribe();
     pollable.block();
-    println!("[DEBUG] pollable resolved, calling future_response.get()");
 
-    let get_result = future_response.get();
-    println!("[DEBUG] get() returned: {:?}", get_result.as_ref().map(|r| r.as_ref().map(|r2| r2.as_ref().map(|resp| resp.status()).map_err(|e| format!("{:?}", e))).map_err(|_| "future err")));
-
-    let response = get_result
+    let response = future_response
+        .get()
         .ok_or_else(|| "no response ready".to_string())?
         .map_err(|_| "future error".to_string())?
         .map_err(|e| format!("response error: {:?}", e))?;
-    println!("[DEBUG] got response, status={}", response.status());
 
     let status = response.status();
     if status != 200 {
         return Err(format!("unexpected HTTP status: {}", status));
     }
 
-    // Read the response body
-    let incoming_body = response.consume()
+    let incoming_body = response
+        .consume()
         .map_err(|_| "consume body failed".to_string())?;
-    let input_stream = incoming_body.stream()
+    let input_stream = incoming_body
+        .stream()
         .map_err(|_| "get input stream failed".to_string())?;
 
     let mut response_bytes = Vec::new();
@@ -145,14 +138,18 @@ fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
     }
     drop(input_stream);
 
-    // Decode gRPC response frame
     if response_bytes.len() < 5 {
-        return Err(format!("response too short: {} bytes", response_bytes.len()));
+        return Err(format!(
+            "response too short: {} bytes",
+            response_bytes.len()
+        ));
     }
 
-    let _compressed = response_bytes[0];
     let msg_len = u32::from_be_bytes([
-        response_bytes[1], response_bytes[2], response_bytes[3], response_bytes[4],
+        response_bytes[1],
+        response_bytes[2],
+        response_bytes[3],
+        response_bytes[4],
     ]) as usize;
 
     if response_bytes.len() < 5 + msg_len {
@@ -163,24 +160,6 @@ fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
         ));
     }
 
-    let proto_bytes = &response_bytes[5..5 + msg_len];
-    ListProductsResponse::decode(proto_bytes)
+    ListProductsResponse::decode(&response_bytes[5..5 + msg_len])
         .map_err(|e| format!("decode error: {}", e))
-}
-
-/// Randomly sample `count` indices from `0..total` using Fisher-Yates partial shuffle.
-fn random_sample_indices(total: usize, count: usize) -> Vec<usize> {
-    if count >= total {
-        return (0..total).collect();
-    }
-
-    let mut indices = Vec::with_capacity(count);
-    let mut available: Vec<usize> = (0..total).collect();
-
-    for _ in 0..count {
-        let idx = fastrand::usize(0..available.len());
-        indices.push(available.swap_remove(idx));
-    }
-
-    indices
 }

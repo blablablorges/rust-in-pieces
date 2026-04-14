@@ -8,6 +8,10 @@ autobins = false
 name = "serve"
 path = "bin/serve.rs"
 
+[[bin]]
+name = "server"
+path = "bin/server.rs"
+
 [lib]
 crate-type = ["cdylib"]
 name = "shippingserwasm"  # This will produce shippingserwasm.wasm
@@ -30,6 +34,8 @@ wasmtime-wasi = "27.0"
 wasmtime-wasi-http = "27.0"
 hyper = { version = "1.0", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
+tonic = { version = "0.13.1", features = ["transport"] }
+tonic-health = "0.13.1"
 
 
 [build-dependencies]

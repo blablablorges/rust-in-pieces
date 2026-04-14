@@ -12,34 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# ---------- Stage 1: Build the WASM component and native server ----------
 FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.85-bookworm AS builder
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
-# Install the wasm32-wasip2 target
-RUN rustup target add wasm32-wasip2
-
-
-# Copy proto definitions
 COPY protos /build/protos
-
-# Copy the service source
 COPY src/recommendationserwasm/ /build/src/recommendationserwasm/
-
-# Copy the WIT submodule
-COPY wit/ /build/wit/
 
 WORKDIR /build/src/recommendationserwasm
 
-# Build the WASM component
-RUN cargo build --lib --target wasm32-wasip2 --release && \
-    cp target/wasm32-wasip2/release/recommendationserwasm.wasm .
+RUN cargo build --bin server --release
 
-# Build the native Wasmtime server binary
-RUN cargo build --bin serve --release
-
-# ---------- Stage 2: Minimal runtime image ----------
 FROM mirror.gcr.io/debian:bookworm-slim
 
 RUN apt-get update && \
@@ -48,11 +31,9 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy the WASM component and the native server binary
-COPY --from=builder /build/src/recommendationserwasm/recommendationserwasm.wasm .
-COPY --from=builder /build/src/recommendationserwasm/target/release/serve .
+COPY --from=builder /build/src/recommendationserwasm/target/release/server .
 
 ENV PORT="8080"
 EXPOSE 8080
 
-ENTRYPOINT ["./serve"]
+ENTRYPOINT ["./server"]

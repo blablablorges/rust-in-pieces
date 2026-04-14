@@ -1,9 +1,11 @@
-use tonic::{Request, Response, Status};
+use anyhow::{Context, Result};
+use tonic::{transport::Server, Request, Response, Status};
 
 pub mod hipstershop {
     tonic::include_proto!("hipstershop");
 }
 
+#[path = "../src/core.rs"]
 mod core;
 
 use hipstershop::shipping_service_server::{ShippingService, ShippingServiceServer};
@@ -11,7 +13,6 @@ use hipstershop::{GetQuoteRequest, GetQuoteResponse, Money, ShipOrderRequest, Sh
 
 const NANOS_PER_CENT: i32 = 10_000_000;
 
-#[wasi_grpc_server::grpc_component(ShippingServiceServer)]
 struct ShippingServiceImpl;
 
 #[tonic::async_trait]
@@ -53,4 +54,28 @@ impl ShippingService for ShippingServiceImpl {
             tracking_id: core::create_tracking_id(&base_address),
         }))
     }
+}
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    let port = std::env::var("PORT").unwrap_or_else(|_| "50051".to_string());
+    let addr = format!("0.0.0.0:{}", port)
+        .parse()
+        .context("invalid listen address")?;
+
+    let (health_reporter, health_service) = tonic_health::server::health_reporter();
+    health_reporter
+        .set_serving::<ShippingServiceServer<ShippingServiceImpl>>()
+        .await;
+
+    println!("ShippingService listening on {}", addr);
+
+    Server::builder()
+        .add_service(health_service)
+        .add_service(ShippingServiceServer::new(ShippingServiceImpl))
+        .serve(addr)
+        .await
+        .context("gRPC server failed")?;
+
+    Ok(())
 }
