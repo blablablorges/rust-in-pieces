@@ -26,6 +26,7 @@ minikube start --cpus=4 --memory 4096 --disk-size 32g
 
 
 ## Deploy wasm-service 
+Example for the shipping service, which is now implemented as a WebAssembly component. The same steps can be applied to the recommendation service as well, which is also implemented as a WebAssembly component.
 
 1. Ensure you have the following requirements:
    - rustup: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
@@ -73,7 +74,7 @@ Find **Protocol Buffers Descriptions** at the [`./protos` directory](/protos).
 | [shippingservice](/src/shippingservice)             | ~~Go~~ Rust | Gives shipping cost estimates based on the shopping cart. Ships items to the given address (mock)                                 |
 | [emailservice](/src/emailservice)                   | Python        | Sends users an order confirmation email (mock).                                                                                   |
 | [checkoutservice](/src/checkoutservice)             | Go            | Retrieves user cart, prepares order and orchestrates the payment, shipping and the email notification.                            |
-| [recommendationservice](/src/recommendationservice) | Python        | Recommends other products based on what's given in the cart.                                                                      |
+| [recommendationservice](/src/recommendationservice) | ~~Python~~ Rust | Recommends other products based on what's given in the cart.                                                                      |
 | [adservice](/src/adservice)                         | Java          | Provides text ads based on given context words.                                                                                   |
 | [loadgenerator](/src/loadgenerator)                 | Python/Locust | Continuously sends requests imitating realistic user shopping flows to the frontend.                                              |
 

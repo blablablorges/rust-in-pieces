@@ -46,14 +46,6 @@ spec:
         image: recommendationservice
         ports:
         - containerPort: 8080
-        readinessProbe:
-          periodSeconds: 20
-          grpc:
-            port: 8080
-        livenessProbe:
-          periodSeconds: 20
-          grpc:
-            port: 8080
         env:
         - name: PORT
           value: "8080"

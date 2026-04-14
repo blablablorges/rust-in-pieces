@@ -1,0 +1,15 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkoutservice
+spec:
+  selector:
+    matchLabels:
+      app: checkoutservice
+  template:
+    spec:
+      containers:
+      - name: server
+        env:
+        - name: CART_SERVICE_ADDR
+          value: "cartservice:7070"

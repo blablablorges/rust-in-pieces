@@ -5,13 +5,26 @@ use wasmtime::{
 };
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiView};
 use wasmtime_wasi_http::{
-    bindings::ProxyPre,
     bindings::http::types::Scheme,
     body::HyperOutgoingBody,
     io::TokioIo,
     types::{HostFutureIncomingResponse, OutgoingRequestConfig},
     HttpResult, WasiHttpCtx, WasiHttpView,
 };
+
+wasmtime::component::bindgen!({
+    world: "service",
+    path: "../../wit",
+    async: {
+        only_imports: ["nonexistent"],
+    },
+    with: {
+        "wasi:http": wasmtime_wasi_http::bindings::http,
+        "wasi": wasmtime_wasi::bindings,
+    },
+    trappable_imports: true,
+    require_store_data_send: true,
+});
 use tokio::net::TcpListener;
 use hyper::{body::Incoming, Request, Response};
 use hyper::service::service_fn;
@@ -57,7 +70,7 @@ impl WasiHttpView for Host {
 
 #[derive(Clone)]
 struct Server {
-    pre: ProxyPre<Host>,
+    pre: ServicePre<Host>,
 }
 
 impl Server {
@@ -239,8 +252,8 @@ async fn main() -> Result<()> {
     wasmtime_wasi::add_to_linker_async(&mut linker)?;
     wasmtime_wasi_http::add_only_http_to_linker_async(&mut linker)?;
 
-    // Pre-instantiate the proxy
-    let pre = ProxyPre::new(linker.instantiate_pre(&component)?)?;
+    // Pre-instantiate with custom service world (superset of proxy)
+    let pre = ServicePre::new(linker.instantiate_pre(&component)?)?;
     let server = Server { pre };
 
     // Bind to the address

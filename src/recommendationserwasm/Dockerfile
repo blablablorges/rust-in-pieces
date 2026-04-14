@@ -27,6 +27,9 @@ COPY protos /build/protos
 # Copy the service source
 COPY src/recommendationserwasm/ /build/src/recommendationserwasm/
 
+# Copy the WIT submodule
+COPY wit/ /build/wit/
+
 WORKDIR /build/src/recommendationserwasm
 
 # Build the WASM component

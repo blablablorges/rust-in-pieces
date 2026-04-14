@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cartservice
+spec:
+  selector:
+    matchLabels:
+      app: cartservice
+  template:
+    metadata:
+      labels:
+        app: cartservice
+    spec:
+      containers:
+      - name: server
+        image: ghcr.io/containerd/runwasi/cartserwasm:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 7070
+        env:
+        - name: PORT
+          value: "7070"
+        - name: REDIS_ADDR
+          value: "redis-cart:6379"
+        - name: RUST_LOG
+          value: info,wasi_grpc_server=debug
+        - name: WASMTIME_HTTP_PROXY_SOCKET_ADDR
+          value: "7070"
+        - name: WASMTIME_HTTP_PROXY_ENABLE
+          value: "1"
+        - name: WASMTIME_HTTP_PROXY_BACKLOG
+          value: "128"
+        - name: WASMTIME_HTTP_PROXY_SERVER_MODE
+          value: h2
+        - name: WASMTIME_HTTP_PROXY_ALLOW_NETWORK
+          value: "true"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      nodeSelector:
+        runtime: wasmtime
+      restartPolicy: Always
+      runtimeClassName: wasmtime
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cartservice
+  labels:
+    app: cartservice
+spec:
+  type: ClusterIP
+  selector:
+    app: cartservice
+  ports:
+  - name: grpc
+    port: 7070
+    targetPort: 7070
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cartservice

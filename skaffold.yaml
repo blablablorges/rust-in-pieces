@@ -66,7 +66,7 @@ build:
       cacheFrom:
         - currencyservice
   - image: cartservice
-    context: src/cartservice/src
+    context: src/cartserwasm
     docker:
       dockerfile: Dockerfile
       cacheFrom:
@@ -101,26 +101,23 @@ profiles:
   - op: replace
     path: /build/artifacts/7/docker/dockerfile
     value: Dockerfile.debug
-# The "network-policies" profile is not used by default.
-# You can use it in isolation or in combination with other profiles:
-#     skaffold run -p network-policies, debug
 - name: baseline
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/baseline
-- name: wasi-runtime
+- name: wasi-vanilla
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    value: kustomize/overlays/wasi-runtime
-- name: kirin-runtime
+    value: kustomize/overlays/wasi-vanilla
+- name: wasi-grpc
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    value: kustomize/overlays/with-external
+    value: kustomize/overlays/wasi-grpc
 - name: wasi-runtime-full
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
-    value: kustomize/overlays/wasi-runtime-full
+    value: kustomize/overlays/wasi-tcp
