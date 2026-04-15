@@ -66,9 +66,9 @@ build:
       cacheFrom:
         - currencyservice
   - image: cartservice
-    context: src/cartserwasm
+    context: .
     docker:
-      dockerfile: Dockerfile
+      dockerfile: src/cartserwasm/Dockerfile
       cacheFrom:
         - cartservice
   - image: frontend

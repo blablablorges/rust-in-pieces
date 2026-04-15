@@ -1,6 +1,6 @@
 # Copyright 2026
 
-FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.85-bookworm AS builder
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.86-bookworm AS builder
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
