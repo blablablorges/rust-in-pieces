@@ -157,21 +157,69 @@ fn parse_bulk_string(buf: &[u8]) -> Result<Option<Vec<u8>>, String> {
     Ok(Some(buf[data_start..data_end].to_vec()))
 }
 
+/// Try to resolve a hostname, attempting Kubernetes FQDN suffixes if needed.
+fn resolve_host(host: &str) -> Result<wasi::sockets::network::IpAddress, String> {
+    // If host is already an IP address, parse it directly
+    if let Ok(v4) = host.parse::<std::net::Ipv4Addr>() {
+        let o = v4.octets();
+        return Ok(wasi::sockets::network::IpAddress::Ipv4((o[0], o[1], o[2], o[3])));
+    }
+    if let Ok(v6) = host.parse::<std::net::Ipv6Addr>() {
+        let s = v6.segments();
+        return Ok(wasi::sockets::network::IpAddress::Ipv6((
+            s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
+        )));
+    }
+
+    // Build a list of names to try: original, then Kubernetes FQDN variants
+    let kube_ns = std::env::var("KUBE_NAMESPACE").unwrap_or_default();
+    let mut names = vec![host.to_string()];
+    if !host.contains('.') {
+        // Short name — try Kubernetes DNS suffixes
+        if !kube_ns.is_empty() {
+            names.push(format!("{}.{}.svc.cluster.local", host, kube_ns));
+        }
+        // Also try without namespace (relies on cluster DNS default)
+        names.push(format!("{}.svc.cluster.local", host));
+    }
+
+    let net = wasi::sockets::instance_network::instance_network();
+    let mut last_err = String::new();
+    for name in &names {
+        eprintln!("[redis] trying DNS resolution for: {}", name);
+        match wasi::sockets::ip_name_lookup::resolve_addresses(&net, name) {
+            Ok(addrs) => {
+                addrs.subscribe().block();
+                match addrs.resolve_next_address() {
+                    Ok(Some(ip)) => {
+                        eprintln!("[redis] resolved {} to {:?}", name, ip);
+                        return Ok(ip);
+                    }
+                    Ok(None) => {
+                        last_err = format!("no addresses for: {}", name);
+                        eprintln!("[redis] {}", last_err);
+                    }
+                    Err(e) => {
+                        last_err = format!("DNS error for {}: {:?}", name, e);
+                        eprintln!("[redis] {}", last_err);
+                    }
+                }
+            }
+            Err(e) => {
+                last_err = format!("DNS resolve error for {}: {:?}", name, e);
+                eprintln!("[redis] {}", last_err);
+            }
+        }
+    }
+    Err(last_err)
+}
+
 fn redis_command(args: &[&[u8]]) -> Result<Vec<u8>, String> {
     let addr_str = redis_addr();
     eprintln!("[redis] connecting to {}", addr_str);
     let (host, port) = parse_host_port(&addr_str)?;
 
-    eprintln!("[redis] resolving DNS for {}", host);
-    let net = wasi::sockets::instance_network::instance_network();
-    let addrs = wasi::sockets::ip_name_lookup::resolve_addresses(&net, &host)
-        .map_err(|e| format!("DNS resolve error: {:?}", e))?;
-    addrs.subscribe().block();
-    let ip = addrs
-        .resolve_next_address()
-        .map_err(|e| format!("DNS error: {:?}", e))?
-        .ok_or_else(|| format!("could not resolve host: {}", host))?;
-    eprintln!("[redis] resolved to {:?}", ip);
+    let ip = resolve_host(&host)?;
 
     eprintln!("[redis] creating TCP socket");
     let sock = match &ip {
