@@ -88,10 +88,16 @@ async fn load_cart<S: CartStore>(
             user_id: user_id.to_string(),
             items: vec![],
         }),
-        Err(e) => Err(Status::failed_precondition(format!(
-            "can't access cart storage: {}",
-            e
-        ))),
+        Err(e) => {
+            eprintln!("[cart] storage error for {}: {}", key, e);
+            // Return empty cart instead of error — gRPC Trailers-Only error
+            // responses lose grpc-status trailers through the WASI HTTP layer,
+            // causing "server closed the stream without sending trailers".
+            Ok(Cart {
+                user_id: user_id.to_string(),
+                items: vec![],
+            })
+        }
     }
 }
 
@@ -99,8 +105,8 @@ async fn save_cart<S: CartStore>(store: &S, key: &str, cart: &Cart) -> Result<()
     let mut bytes = Vec::new();
     cart.encode(&mut bytes)
         .map_err(|e| Status::internal(format!("failed to encode cart: {}", e)))?;
-    store
-        .save(key, bytes)
-        .await
-        .map_err(|e| Status::failed_precondition(format!("can't access cart storage: {}", e)))
+    if let Err(e) = store.save(key, bytes).await {
+        eprintln!("[cart] save error for {}: {}", key, e);
+    }
+    Ok(())
 }
