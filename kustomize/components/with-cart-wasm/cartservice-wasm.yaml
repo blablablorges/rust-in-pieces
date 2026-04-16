@@ -25,7 +25,7 @@ spec:
         - name: RUST_LOG
           value: info,wasi_grpc_server=debug
         - name: WASMTIME_HTTP_PROXY_SOCKET_ADDR
-          value: "7070"
+          value: "0.0.0.0:7070"
         - name: WASMTIME_HTTP_PROXY_ENABLE
           value: "1"
         - name: WASMTIME_HTTP_PROXY_BACKLOG

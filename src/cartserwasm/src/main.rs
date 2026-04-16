@@ -159,8 +159,10 @@ fn parse_bulk_string(buf: &[u8]) -> Result<Option<Vec<u8>>, String> {
 
 fn redis_command(args: &[&[u8]]) -> Result<Vec<u8>, String> {
     let addr_str = redis_addr();
+    eprintln!("[redis] connecting to {}", addr_str);
     let (host, port) = parse_host_port(&addr_str)?;
 
+    eprintln!("[redis] resolving DNS for {}", host);
     let net = wasi::sockets::instance_network::instance_network();
     let addrs = wasi::sockets::ip_name_lookup::resolve_addresses(&net, &host)
         .map_err(|e| format!("DNS resolve error: {:?}", e))?;
@@ -169,7 +171,9 @@ fn redis_command(args: &[&[u8]]) -> Result<Vec<u8>, String> {
         .resolve_next_address()
         .map_err(|e| format!("DNS error: {:?}", e))?
         .ok_or_else(|| format!("could not resolve host: {}", host))?;
+    eprintln!("[redis] resolved to {:?}", ip);
 
+    eprintln!("[redis] creating TCP socket");
     let sock = match &ip {
         wasi::sockets::network::IpAddress::Ipv4(_) => {
             wasi::sockets::tcp_create_socket::create_tcp_socket(
@@ -184,6 +188,7 @@ fn redis_command(args: &[&[u8]]) -> Result<Vec<u8>, String> {
     }
     .map_err(|e| format!("create socket error: {:?}", e))?;
 
+    eprintln!("[redis] connecting to {:?}:{}", ip, port);
     let remote = match ip {
         wasi::sockets::network::IpAddress::Ipv4(a) => {
             wasi::sockets::network::IpSocketAddress::Ipv4(
@@ -209,10 +214,12 @@ fn redis_command(args: &[&[u8]]) -> Result<Vec<u8>, String> {
     let (input, output) = sock
         .finish_connect()
         .map_err(|e| format!("finish_connect error: {:?}", e))?;
+    eprintln!("[redis] connected, sending command");
 
     output
         .blocking_write_and_flush(&resp_encode(args))
         .map_err(|e| format!("write error: {:?}", e))?;
+    eprintln!("[redis] command sent, reading response");
 
     read_resp_response(&input)
 }
