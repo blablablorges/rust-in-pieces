@@ -116,6 +116,10 @@ func (fe *frontendServer) getRecommendations(ctx context.Context, userID string,
 	return out, err
 }
 
+func (fe *frontendServer) runWorkload(ctx context.Context) error {
+	return fe.syntheticSvcConn.Invoke(ctx, "/hipstershop.SyntheticService/RunWorkload", &pb.Empty{}, &pb.Empty{})
+}
+
 func (fe *frontendServer) getAd(ctx context.Context, ctxKeys []string) ([]*pb.Ad, error) {
 	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*100)
 	defer cancel()

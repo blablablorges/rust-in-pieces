@@ -260,3 +260,23 @@ message Ad {
     // short advertisement text to display.
     string text = 2;
 }
+
+// --------------- Synthetic Load Service ---------------
+//
+// Runs a configurable mix of CPU / memory / IO / network / DB stressors
+// whose intensities are controlled by environment variables on the service
+// pod (CPU_LEVEL, MEMORY_LEVEL, IO_LEVEL, NETWORK_LEVEL, DB_LEVEL).
+// Each level is 0 (none), 1 (mid), or 2 (high).
+
+service SyntheticService {
+    rpc RunWorkload(WorkloadRequest) returns (WorkloadResponse) {}
+}
+
+// No request fields — workload profile is fully pod-env-driven.
+message WorkloadRequest {}
+
+message WorkloadResponse {
+    // Per-stressor result strings (useful for debugging, not required).
+    map<string, string> stressor_results = 1;
+    int64 total_ms = 2;
+}

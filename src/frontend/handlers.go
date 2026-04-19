@@ -633,3 +633,16 @@ func stringinSlice(slice []string, val string) bool {
 	}
 	return false
 }
+
+func (fe *frontendServer) workloadHandler(w http.ResponseWriter, r *http.Request) {
+	if fe.syntheticSvcConn == nil {
+		http.Error(w, "synthetic service not configured (set SYNTHETIC_SERVICE_ADDR)", http.StatusServiceUnavailable)
+		return
+	}
+	if err := fe.runWorkload(r.Context()); err != nil {
+		http.Error(w, fmt.Sprintf("workload error: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "ok")
+}

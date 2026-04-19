@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: syntheticservice-stress-level
+data:
+  CPU_LEVEL: "0"
+  MEMORY_LEVEL: "0"
+  IO_LEVEL: "0"
+  NETWORK_LEVEL: "0"
+  DB_LEVEL: "0"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: syntheticservice
+  labels:
+    app: syntheticservice
+spec:
+  selector:
+    matchLabels:
+      app: syntheticservice
+  template:
+    metadata:
+      labels:
+        app: syntheticservice
+    spec:
+      serviceAccountName: syntheticservice
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        image: syntheticservice
+        ports:
+        - containerPort: 50055
+        env:
+        - name: PORT
+          value: "50055"
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"
+        - name: REDIS_ADDR
+          value: "redis-cart:6379"
+        # inject stress level from configmap:
+        envFrom:
+        - configMapRef:
+            name: syntheticservice-stress-level
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: syntheticservice
+  labels:
+    app: syntheticservice
+spec:
+  type: ClusterIP
+  selector:
+    app: syntheticservice
+  ports:
+  - name: grpc
+    port: 50055
+    targetPort: 50055
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: syntheticservice
