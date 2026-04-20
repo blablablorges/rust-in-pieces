@@ -14,15 +14,8 @@
 
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
-resources:
-  - allow-egress-googleapis.yaml
-  - frontend-gateway.yaml
-  - frontend.yaml
-patches:
-# frontend - delete frontend-external service (same as non-public-frontend component)
-- patch: |-
-    apiVersion: v1
-    kind: Service
-    metadata:
-      name: frontend-external
-    $patch: delete
+- path: delete-frontend.patch.yaml
+- path: delete-currencyservice.patch.yaml
+- path: delete-checkoutservice.patch.yaml
+- path: delete-paymentservice.patch.yaml
+- path: delete-adservice.patch.yaml

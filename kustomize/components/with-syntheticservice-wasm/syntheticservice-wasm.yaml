@@ -89,6 +89,22 @@ spec:
     targetPort: 50055
 ---
 apiVersion: v1
+kind: Service
+metadata:
+  name: syntheticservice-external
+  labels:
+    app: syntheticservice
+spec:
+  type: NodePort
+  selector:
+    app: syntheticservice
+  ports:
+  - name: grpc
+    port: 50055
+    targetPort: 50055
+    nodePort: 30055
+---
+apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: syntheticservice

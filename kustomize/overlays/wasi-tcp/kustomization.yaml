@@ -8,6 +8,7 @@ resources:
 components:
   - ../../components/with-shipping-wasm
   - ../../components/with-recommendation-wasm
+  - ../../components/with-syntheticservice-docker
   - ../../components/with-cart-wasm
   - ../../components/with-node-selector
   - ../../components/container-pull-secrets

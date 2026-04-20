@@ -6,6 +6,9 @@ resources:
   - ../../base          # or ../../base if you have a base folder
 
 components:
-  - ../../components/with-shipping-external
+  - ../../components/with-shipping-wasm
+  - ../../components/with-recommendation-wasm
+  - ../../components/with-cart-wasm
+  - ../../components/with-syntheticservice-wasm
   - ../../components/with-node-selector
   - ../../components/container-pull-secrets

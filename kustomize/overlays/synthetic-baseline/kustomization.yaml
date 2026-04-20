@@ -6,9 +6,7 @@ resources:
   - ../../base          # or ../../base if you have a base folder
 
 components:
-  - ../../components/with-shipping-docker
-  - ../../components/with-recommendation-docker
-  - ../../components/with-cart-docker
   - ../../components/with-syntheticservice-docker
   - ../../components/with-node-selector
   - ../../components/container-pull-secrets
+  - ../../components/without-base

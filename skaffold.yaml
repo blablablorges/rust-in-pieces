@@ -116,8 +116,23 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/wasi-grpc
-- name: wasi-runtime-full
+- name: wasi-tcp
   patches:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/wasi-tcp
+- name: wasi-runtime-full
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/wasi-all
+- name: synthetic-baseline
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/synthetic-baseline
+- name: synthetic-wasm
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/synthetic-wasm
