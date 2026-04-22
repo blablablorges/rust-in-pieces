@@ -36,10 +36,10 @@ spec:
         runAsUser: 1000
       containers:
       - name: server
-        image: loadserwasm
+        image: ghcr.io/containerd/runwasi/syntheticservicewasm:latest
         imagePullPolicy: Never
         ports:
-        - containerPort: 50055
+        - containerPort: 8080
         env:
         - name: PORT
           value: "50055"
@@ -70,8 +70,8 @@ spec:
             cpu: 100m
             memory: 64Mi
           limits:
-            cpu: 500m
-            memory: 256Mi
+            cpu: 200m
+            memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
@@ -86,7 +86,7 @@ spec:
   ports:
   - name: grpc
     port: 50055
-    targetPort: 50055
+    targetPort: 8080
 ---
 apiVersion: v1
 kind: Service
@@ -101,7 +101,7 @@ spec:
   ports:
   - name: grpc
     port: 50055
-    targetPort: 50055
+    targetPort: 8080
     nodePort: 30055
 ---
 apiVersion: v1

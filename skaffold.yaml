@@ -81,6 +81,12 @@ build:
     docker:
       cacheFrom:
         - adservice
+  - image: syntheticservice
+    context: .
+    docker:
+      dockerfile: src/syntheticservicewasm/Dockerfile
+      cacheFrom:
+        - syntheticservice
   tagPolicy:
     gitCommit: {}
   local:

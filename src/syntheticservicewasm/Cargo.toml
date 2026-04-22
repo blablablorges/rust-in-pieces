@@ -1,5 +1,5 @@
 [package]
-name = "loadserwasm"
+name = "syntheticservicewasm"
 version = "0.1.0"
 edition = "2021"
 autobins = false
@@ -14,7 +14,7 @@ path = "bin/server.rs"
 
 [lib]
 crate-type = ["cdylib"]
-name = "loadserwasm"
+name = "syntheticservicewasm"
 path = "src/main.rs"
 
 [dependencies]

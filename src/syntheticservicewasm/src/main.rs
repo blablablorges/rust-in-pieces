@@ -60,6 +60,7 @@ impl SyntheticService for SyntheticServiceImpl {
         _request: Request<WorkloadRequest>,
     ) -> Result<Response<WorkloadResponse>, Status> {
         let config = WorkloadConfig::from_env();
+        println!("Received workload request with config: {:?}", config);
         let catalog_addr = std::env::var("PRODUCT_CATALOG_SERVICE_ADDR")
             .unwrap_or_else(|_| "localhost:3550".to_string());
         let redis_addr =

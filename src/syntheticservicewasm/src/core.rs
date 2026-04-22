@@ -4,7 +4,7 @@ use std::collections::HashMap;
 // Configuration
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Level {
     None,
     Mid,
@@ -21,6 +21,7 @@ impl Level {
     }
 }
 
+#[derive(Debug)]
 pub struct WorkloadConfig {
     pub cpu: Level,
     pub memory: Level,
@@ -39,6 +40,8 @@ impl WorkloadConfig {
             db: Level::from_env("DB_LEVEL"),
         }
     }
+
+
 }
 
 // ---------------------------------------------------------------------------

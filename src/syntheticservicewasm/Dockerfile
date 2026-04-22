@@ -1,11 +1,11 @@
-FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.85-bookworm AS builder
+FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.86-bookworm AS builder
 
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
 COPY protos /build/protos
-COPY src/loadserwasm/ /build/src/loadserwasm/
+COPY src/syntheticservicewasm/ /build/src/syntheticservicewasm/
 
-WORKDIR /build/src/loadserwasm
+WORKDIR /build/src/syntheticservicewasm
 
 RUN cargo build --bin server --release
 
@@ -17,7 +17,7 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-COPY --from=builder /build/src/loadserwasm/target/release/server .
+COPY --from=builder /build/src/syntheticservicewasm/target/release/server .
 
 ENV PORT="50055"
 EXPOSE 50055

@@ -80,6 +80,8 @@ impl SyntheticService for SyntheticServiceImpl {
         _request: Request<WorkloadRequest>,
     ) -> Result<Response<WorkloadResponse>, Status> {
         let config = WorkloadConfig::from_env();
+        // log config for debugging
+        println!("Running workload with config: {:?}", config);
         let net = TonicNetworkClient {
             addr: self.catalog_addr.clone(),
         };
