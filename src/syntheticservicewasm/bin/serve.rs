@@ -67,6 +67,9 @@ impl Server {
         req: Request<Incoming>,
     ) -> Result<Response<HyperOutgoingBody>> {
         println!("Incoming request: {} {}", req.method(), req.uri());
+
+        let file_perms = wasmtime_wasi::FilePerms::all();
+        let dir_perms  = wasmtime_wasi::DirPerms::all();
         let mut store = Store::new(
             self.pre.engine(),
             Host {
@@ -76,7 +79,7 @@ impl Server {
                     .inherit_env()
                     .inherit_network()
                     .allow_ip_name_lookup(true)
-                    .preopened_dir("/tmp", "/tmp", DirPerms::all(), FilePerms::all())?
+                    .preopened_dir("/tmp", "/tmp", dir_perms, file_perms)?
                     .build(),
                 http: WasiHttpCtx::new(),
             },
@@ -133,7 +136,8 @@ async fn main() -> Result<()> {
 
     let engine = Engine::new(&config)?;
 
-    let wasm_path = "./loadserwasm.wasm";
+    //Read path from arguments or use default
+    let wasm_path = std::env::args().nth(1).unwrap_or_else(|| "./syntheticservicewasm.wasm".into());
     println!("Loading WASM component from: {}", wasm_path);
     let component = Component::from_file(&engine, wasm_path)
         .context("Failed to load WASM component")?;

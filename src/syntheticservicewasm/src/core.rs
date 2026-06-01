@@ -103,12 +103,17 @@ pub fn run_io(level: Level) -> String {
         Level::High => 16 * 1024 * 1024,
     };
     let dir = std::env::var("WORKLOAD_TMP_DIR").unwrap_or_else(|_| "/tmp".to_string());
-    // Each request is a fresh Wasm instance, so a process-global counter would
-    // always reset to 0 — every concurrent request would race on one path
-    // (write/read/delete collisions). The shim injects a unique REQUEST_ID per
-    // request; use it to give each request its own scratch file.
-    let id = std::env::var("REQUEST_ID").unwrap_or_else(|_| "0".to_string());
-    let path = format!("{}/loadserwasm-probe-{}", dir, id);
+    // All instances in a pod share the host /tmp, so the scratch path must be
+    // unique per concurrent request or they truncate/remove each other's files
+    // (ENOENT / "read 0 MiB"). REQUEST_ID disambiguates when the shim injects it,
+    // but don't depend on that — wall-clock nanos make the path unique even on a
+    // shim that doesn't set REQUEST_ID. Both are portable std (wasm + native).
+    let req_id = std::env::var("REQUEST_ID").unwrap_or_else(|_| "0".to_string());
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let path = format!("{}/loadserwasm-probe-{}-{}", dir, req_id, nanos);
     let data: Vec<u8> = vec![0xABu8; size];
     if let Err(e) = std::fs::write(&path, &data) {
         let _ = std::fs::remove_file(&path);
