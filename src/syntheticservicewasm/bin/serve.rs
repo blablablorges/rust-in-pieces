@@ -76,8 +76,7 @@ impl Server {
                     .inherit_env()
                     .inherit_network()
                     .allow_ip_name_lookup(true)
-                    // TODO: pre-open a temp directory for IO stressor when needed:
-                    // .preopened_dir("/tmp", "/tmp", DirPerms::all(), FilePerms::all())?
+                    .preopened_dir("/tmp", "/tmp", DirPerms::all(), FilePerms::all())?
                     .build(),
                 http: WasiHttpCtx::new(),
             },

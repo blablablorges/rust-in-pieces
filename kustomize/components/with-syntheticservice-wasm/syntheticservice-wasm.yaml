@@ -47,20 +47,24 @@ spec:
           value: "1"
         - name: RUST_LOG
           value: info,wasi_grpc_server=debug
+        - name: WASMTIME_HTTP_PROXY_ENABLE
+          value: "1"
+        - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"
+        - name: REDIS_ADDR
+          value: "redis-cart:6379"
+        - name: RUST_LOG
+          value: info,wasi_grpc_server=debug
         - name: WASMTIME_HTTP_PROXY_SOCKET_ADDR
-          value: "8080"
+          value: "0.0.0.0:8080"
         - name: WASMTIME_HTTP_PROXY_ENABLE
           value: "1"
         - name: WASMTIME_HTTP_PROXY_BACKLOG
           value: "128"
         - name: WASMTIME_HTTP_PROXY_SERVER_MODE
           value: h2
-        - name: WASMTIME_HTTP_PROXY_OUTGOING_H2C
+        - name: WASMTIME_HTTP_PROXY_ALLOW_NETWORK
           value: "true"
-        - name: PRODUCT_CATALOG_SERVICE_ADDR
-          value: "productcatalogservice:3550"
-        - name: REDIS_ADDR
-          value: "redis-cart:6379"
         # inject stress level from configmap:
         envFrom:
         - configMapRef:
@@ -68,10 +72,16 @@ spec:
         resources:
           requests:
             cpu: 100m
-            memory: 64Mi
+            memory: 512Mi
           limits:
             cpu: 200m
-            memory: 128Mi
+            memory: 1024Mi
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

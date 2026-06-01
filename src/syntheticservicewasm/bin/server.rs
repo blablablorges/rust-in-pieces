@@ -93,6 +93,11 @@ impl SyntheticService for SyntheticServiceImpl {
         let stressor_results = core::run_workload(&config, &net, &db).await;
         let total_ms = start.elapsed().as_millis() as i64;
 
+        println!(
+            "Workload completed in {} ms with results: {:?}",
+            total_ms, stressor_results
+        );
+
         Ok(Response::new(WorkloadResponse {
             stressor_results,
             total_ms,

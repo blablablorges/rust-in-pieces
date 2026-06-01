@@ -70,6 +70,7 @@ impl SyntheticService for SyntheticServiceImpl {
         _request: Request<WorkloadRequest>,
     ) -> Result<Response<WorkloadResponse>, Status> {
         let config = WorkloadConfig::from_env();
+        
         println!("Received workload request with config: {:?}", config);
         let catalog_addr = std::env::var("PRODUCT_CATALOG_SERVICE_ADDR")
             .unwrap_or_else(|_| "localhost:3550".to_string());
@@ -82,6 +83,11 @@ impl SyntheticService for SyntheticServiceImpl {
         let start = std::time::Instant::now();
         let stressor_results = core::run_workload(&config, &net, &db).await;
         let total_ms = start.elapsed().as_millis() as i64;
+
+        println!(
+            "Workload completed in {} ms with results: {:?}",
+            total_ms, stressor_results
+        );
 
         Ok(Response::new(WorkloadResponse {
             stressor_results,
