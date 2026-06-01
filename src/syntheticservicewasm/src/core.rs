@@ -103,18 +103,27 @@ pub fn run_io(level: Level) -> String {
         Level::High => 16 * 1024 * 1024,
     };
     let dir = std::env::var("WORKLOAD_TMP_DIR").unwrap_or_else(|_| "/tmp".to_string());
-    let path = format!("{}/loadserwasm-probe", dir);
+    // Each request is a fresh Wasm instance, so a process-global counter would
+    // always reset to 0 — every concurrent request would race on one path
+    // (write/read/delete collisions). The shim injects a unique REQUEST_ID per
+    // request; use it to give each request its own scratch file.
+    let id = std::env::var("REQUEST_ID").unwrap_or_else(|_| "0".to_string());
+    let path = format!("{}/loadserwasm-probe-{}", dir, id);
     let data: Vec<u8> = vec![0xABu8; size];
     if let Err(e) = std::fs::write(&path, &data) {
+        let _ = std::fs::remove_file(&path);
         return format!("write error: {}", e);
     }
-    match std::fs::read(&path) {
-        Ok(read_data) => {
-            let _ = std::fs::remove_file(&path);
-            format!("wrote+read {} MiB", read_data.len() / (1024 * 1024))
-        }
+    // Free the write buffer before reading so we don't hold 2× `size` live in
+    // linear memory at once — Wasm linear memory never shrinks, so the per-
+    // request high-water sets the RSS the shim must pin for the whole request.
+    drop(data);
+    let result = match std::fs::read(&path) {
+        Ok(read_data) => format!("wrote+read {} MiB", read_data.len() / (1024 * 1024)),
         Err(e) => format!("read error: {}", e),
-    }
+    };
+    let _ = std::fs::remove_file(&path);
+    result
 }
 
 // ---------------------------------------------------------------------------

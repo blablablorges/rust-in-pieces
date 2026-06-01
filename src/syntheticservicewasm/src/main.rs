@@ -40,8 +40,18 @@ struct WasiDbClient {
 #[tonic::async_trait]
 impl DbClient for WasiDbClient {
     async fn roundtrip(&self, key: &str, value: &[u8]) -> Result<(), String> {
-        wasi_redis_set(&self.addr, key, value)?;
-        wasi_redis_get(&self.addr, key)?;
+        // One socket for both commands instead of dialing (and re-resolving
+        // DNS) twice. Connection is dropped/closed at the end of this scope.
+        let conn = RedisConn::connect(&self.addr)?;
+        let set_resp = conn.command(&[b"SET", key.as_bytes(), value])?;
+        if !set_resp.is_empty() && set_resp[0] == b'-' {
+            return Err(format!(
+                "Redis SET error: {}",
+                std::str::from_utf8(&set_resp[1..]).unwrap_or("?").trim()
+            ));
+        }
+        let get_resp = conn.command(&[b"GET", key.as_bytes()])?;
+        parse_bulk_string(&get_resp)?;
         Ok(())
     }
 }
@@ -166,82 +176,121 @@ fn wasi_call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
 }
 
 // ---------------------------------------------------------------------------
-// WASI TCP/RESP — minimal Redis client (SET + GET)
+// WASI TCP/RESP — minimal Redis client (SET + GET) with timeouts
 // ---------------------------------------------------------------------------
 
-fn wasi_redis_set(addr: &str, key: &str, value: &[u8]) -> Result<(), String> {
-    let resp = wasi_redis_command(addr, &[b"SET", key.as_bytes(), value])?;
-    if !resp.is_empty() && resp[0] == b'-' {
-        return Err(format!(
-            "Redis SET error: {}",
-            std::str::from_utf8(&resp[1..]).unwrap_or("?").trim()
-        ));
+/// Per-operation timeout (ns) for redis connect / read.
+///
+/// Without this, a connect to an unreachable redis blocks for the full TCP SYN
+/// timeout (~127 s) while the shim pins this request's entire Wasm instance in
+/// memory. A handful of such hung requests OOM the shim. Failing fast turns the
+/// hang into a counted error so the request returns and its memory is freed.
+const REDIS_TIMEOUT_NS: u64 = 5_000_000_000; // 5 s
+
+/// Block on `p` until ready or `timeout_ns` elapses; `Err` on timeout.
+fn poll_with_timeout(p: &wasi::io::poll::Pollable, timeout_ns: u64) -> Result<(), String> {
+    let timer = wasi::clocks::monotonic_clock::subscribe_duration(timeout_ns);
+    // poll() returns the indices of the ready pollables; index 0 is `p`.
+    if wasi::io::poll::poll(&[p, &timer]).contains(&0) {
+        Ok(())
+    } else {
+        Err("timed out".to_string())
     }
-    Ok(())
 }
 
-fn wasi_redis_get(addr: &str, key: &str) -> Result<Option<Vec<u8>>, String> {
-    let resp = wasi_redis_command(addr, &[b"GET", key.as_bytes()])?;
-    parse_bulk_string(&resp)
+/// An open redis connection. The socket must outlive its streams, so it is
+/// held here; dropping `RedisConn` closes everything.
+struct RedisConn {
+    _sock: wasi::sockets::tcp::TcpSocket,
+    input: wasi::io::streams::InputStream,
+    output: wasi::io::streams::OutputStream,
 }
 
-fn wasi_redis_command(addr: &str, args: &[&[u8]]) -> Result<Vec<u8>, String> {
-    let (host, port) = parse_host_port(addr)?;
+impl RedisConn {
+    fn connect(addr: &str) -> Result<Self, String> {
+        let (host, port) = parse_host_port(addr)?;
 
-    let net = wasi::sockets::instance_network::instance_network();
-    let addrs = wasi::sockets::ip_name_lookup::resolve_addresses(&net, &host)
-        .map_err(|e| format!("DNS error: {:?}", e))?;
-    addrs.subscribe().block();
-    let ip = addrs
-        .resolve_next_address()
-        .map_err(|e| format!("DNS error: {:?}", e))?
-        .ok_or_else(|| format!("could not resolve {}", host))?;
+        let net = wasi::sockets::instance_network::instance_network();
+        let addrs = wasi::sockets::ip_name_lookup::resolve_addresses(&net, &host)
+            .map_err(|e| format!("DNS error: {:?}", e))?;
+        poll_with_timeout(&addrs.subscribe(), REDIS_TIMEOUT_NS)
+            .map_err(|e| format!("DNS {}", e))?;
+        let ip = addrs
+            .resolve_next_address()
+            .map_err(|e| format!("DNS error: {:?}", e))?
+            .ok_or_else(|| format!("could not resolve {}", host))?;
 
-    let sock = match &ip {
-        wasi::sockets::network::IpAddress::Ipv4(_) => {
-            wasi::sockets::tcp_create_socket::create_tcp_socket(
-                wasi::sockets::network::IpAddressFamily::Ipv4,
-            )
-        }
-        wasi::sockets::network::IpAddress::Ipv6(_) => {
-            wasi::sockets::tcp_create_socket::create_tcp_socket(
-                wasi::sockets::network::IpAddressFamily::Ipv6,
-            )
+        let family = match &ip {
+            wasi::sockets::network::IpAddress::Ipv4(_) => {
+                wasi::sockets::network::IpAddressFamily::Ipv4
+            }
+            wasi::sockets::network::IpAddress::Ipv6(_) => {
+                wasi::sockets::network::IpAddressFamily::Ipv6
+            }
+        };
+        let sock = wasi::sockets::tcp_create_socket::create_tcp_socket(family)
+            .map_err(|e| format!("socket create error: {:?}", e))?;
+
+        let remote = match ip {
+            wasi::sockets::network::IpAddress::Ipv4(a) => {
+                wasi::sockets::network::IpSocketAddress::Ipv4(
+                    wasi::sockets::network::Ipv4SocketAddress { address: a, port },
+                )
+            }
+            wasi::sockets::network::IpAddress::Ipv6(a) => {
+                wasi::sockets::network::IpSocketAddress::Ipv6(
+                    wasi::sockets::network::Ipv6SocketAddress {
+                        address: a,
+                        port,
+                        flow_info: 0,
+                        scope_id: 0,
+                    },
+                )
+            }
+        };
+
+        sock.start_connect(&net, remote)
+            .map_err(|e| format!("connect error: {:?}", e))?;
+        poll_with_timeout(&sock.subscribe(), REDIS_TIMEOUT_NS)
+            .map_err(|e| format!("connect {}", e))?;
+        let (input, output) = sock
+            .finish_connect()
+            .map_err(|e| format!("finish_connect error: {:?}", e))?;
+
+        Ok(RedisConn {
+            _sock: sock,
+            input,
+            output,
+        })
+    }
+
+    /// Send one RESP command and read its reply (timeout-bounded).
+    fn command(&self, args: &[&[u8]]) -> Result<Vec<u8>, String> {
+        self.output
+            .blocking_write_and_flush(&resp_encode(args))
+            .map_err(|e| format!("write error: {:?}", e))?;
+
+        // Subscribe once and reuse the pollable across reads. We must return as
+        // soon as a full RESP reply is buffered — redis keeps the connection
+        // open after replying, so a `blocking_read` past completion would wait
+        // forever for bytes that never come.
+        let sub = self.input.subscribe();
+        let mut buf = Vec::new();
+        loop {
+            poll_with_timeout(&sub, REDIS_TIMEOUT_NS).map_err(|e| format!("read {}", e))?;
+            match self.input.read(4096) {
+                Ok(chunk) if chunk.is_empty() => continue,
+                Ok(chunk) => {
+                    buf.extend_from_slice(&chunk);
+                    if resp_is_complete(&buf) {
+                        return Ok(buf);
+                    }
+                }
+                Err(wasi::io::streams::StreamError::Closed) => return Ok(buf),
+                Err(e) => return Err(format!("read error: {:?}", e)),
+            }
         }
     }
-    .map_err(|e| format!("socket create error: {:?}", e))?;
-
-    let remote = match ip {
-        wasi::sockets::network::IpAddress::Ipv4(a) => {
-            wasi::sockets::network::IpSocketAddress::Ipv4(
-                wasi::sockets::network::Ipv4SocketAddress { address: a, port },
-            )
-        }
-        wasi::sockets::network::IpAddress::Ipv6(a) => {
-            wasi::sockets::network::IpSocketAddress::Ipv6(
-                wasi::sockets::network::Ipv6SocketAddress {
-                    address: a,
-                    port,
-                    flow_info: 0,
-                    scope_id: 0,
-                },
-            )
-        }
-    };
-
-    let net = wasi::sockets::instance_network::instance_network();
-    sock.start_connect(&net, remote)
-        .map_err(|e| format!("connect error: {:?}", e))?;
-    sock.subscribe().block();
-    let (input, output) = sock
-        .finish_connect()
-        .map_err(|e| format!("finish_connect error: {:?}", e))?;
-
-    output
-        .blocking_write_and_flush(&resp_encode(args))
-        .map_err(|e| format!("write error: {:?}", e))?;
-
-    read_resp_response(&input)
 }
 
 fn resp_encode(args: &[&[u8]]) -> Vec<u8> {
@@ -257,22 +306,6 @@ fn resp_encode(args: &[&[u8]]) -> Vec<u8> {
         buf.extend_from_slice(b"\r\n");
     }
     buf
-}
-
-fn read_resp_response(input: &wasi::io::streams::InputStream) -> Result<Vec<u8>, String> {
-    let mut buf = Vec::new();
-    loop {
-        match input.blocking_read(4096) {
-            Ok(chunk) => {
-                buf.extend_from_slice(&chunk);
-                if resp_is_complete(&buf) {
-                    return Ok(buf);
-                }
-            }
-            Err(wasi::io::streams::StreamError::Closed) => return Ok(buf),
-            Err(e) => return Err(format!("read error: {:?}", e)),
-        }
-    }
 }
 
 fn resp_is_complete(buf: &[u8]) -> bool {
