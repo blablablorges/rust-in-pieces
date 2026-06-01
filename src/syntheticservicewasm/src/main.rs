@@ -206,10 +206,16 @@ fn poll_with_timeout(p: &wasi::io::poll::Pollable, timeout_ns: u64) -> Result<()
 
 /// An open redis connection. The socket must outlive its streams, so it is
 /// held here; dropping `RedisConn` closes everything.
+///
+/// Field order is load-bearing: Rust drops fields in declaration order, and
+/// wasmtime-wasi registers the input/output streams as *child resources* of the
+/// socket. Dropping the socket while a child stream is still alive trips
+/// `ResourceTable`'s HasChildren check and traps the guest (silently — no panic
+/// message). So the streams must be declared first and the socket last.
 struct RedisConn {
-    _sock: wasi::sockets::tcp::TcpSocket,
     input: wasi::io::streams::InputStream,
     output: wasi::io::streams::OutputStream,
+    _sock: wasi::sockets::tcp::TcpSocket,
 }
 
 impl RedisConn {
@@ -264,9 +270,9 @@ impl RedisConn {
             .map_err(|e| format!("finish_connect error: {:?}", e))?;
 
         Ok(RedisConn {
-            _sock: sock,
             input,
             output,
+            _sock: sock,
         })
     }
 
