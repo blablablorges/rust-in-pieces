@@ -21,3 +21,5 @@ patches:
 - path: delete-paymentservice.patch.yaml
 - path: delete-adservice.patch.yaml
 - path: delete-emailservice.patch.yaml
+- path: scale-redis.patch.yaml
+- path: scale-productcatalogservice.patch.yaml
