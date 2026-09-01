@@ -22,6 +22,15 @@ spec:
           value: "7070"
         - name: REDIS_ADDR
           value: "redis-cart:6379"
+        # Declares the upstream to the shim's host-side pooled-tcp interface,
+        # with `resp` selecting RESP reply framing. Without it the shim rejects
+        # every call with TcpError::UnknownUpstream("redis-cart:6379") and the
+        # cart silently stores nothing — REDIS_ADDR above is only the guest's
+        # own view and grants no access on its own.
+        # Format is `authority=framing[,authority=framing]`; see
+        # containerd-shim-wasmtime/src/raw_tcp.rs RawTcpConfig::from_env.
+        - name: WASMTIME_RAWTCP_UPSTREAMS
+          value: "redis-cart:6379=resp"
         - name: RUST_LOG
           value: info,wasi_grpc_server=debug
         - name: WASMTIME_HTTP_PROXY_SOCKET_ADDR
