@@ -170,6 +170,14 @@ func main() {
 	r.HandleFunc(baseUrl+"/product-meta/{ids}", svc.getProductByID).Methods(http.MethodGet)
 	r.HandleFunc(baseUrl+"/bot", svc.chatBotHandler).Methods(http.MethodPost)
 	r.HandleFunc(baseUrl+"/workload", svc.workloadHandler).Methods(http.MethodGet)
+	// Served on the existing port so no Service or container port changes, and
+	// registered only when on so the route does not exist by default.
+	if os.Getenv("ENABLE_METRICS") == "1" {
+		log.Info("Metrics enabled at " + baseUrl + "/metrics")
+		r.HandleFunc(baseUrl+"/metrics", metricsHandler).Methods(http.MethodGet)
+	} else {
+		log.Info("Metrics disabled.")
+	}
 
 	var handler http.Handler = r
 	handler = &logHandler{log: log, next: handler}     // add logging
@@ -235,9 +243,17 @@ func mustConnGRPC(ctx context.Context, conn **grpc.ClientConn, addr string) {
 	var err error
 	_, cancel := context.WithTimeout(ctx, time.Second*3)
 	defer cancel()
-	*conn, err = grpc.NewClient(addr,
+	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithStatsHandler(otelgrpc.NewClientHandler()))
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	}
+	// Every backend connection is built here, so one interceptor covers the
+	// whole ladder. Added only when metrics are on, so the default path keeps
+	// the exact call chain the published numbers were produced with.
+	if os.Getenv("ENABLE_METRICS") == "1" {
+		opts = append(opts, grpc.WithChainUnaryInterceptor(metricsUnaryInterceptor))
+	}
+	*conn, err = grpc.NewClient(addr, opts...)
 	if err != nil {
 		panic(errors.Wrapf(err, "grpc: failed to connect %s", addr))
 	}
