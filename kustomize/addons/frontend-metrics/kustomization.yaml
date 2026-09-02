@@ -1,0 +1,12 @@
+# Not a Component and not an overlay: a standalone kustomization skaffold
+# appends as a second manifest path (profile `frontend-metrics`), so it composes
+# with any treatment profile: `skaffold run -p wasi-tcp,frontend-metrics`.
+# A Component cannot be a kustomize root, and a per-treatment overlay would
+# double the overlay count for one env var.
+#
+# Enable for a whole campaign or not at all — never for some treatments and not
+# others (see src/frontend/metrics.go).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- frontend-metrics.yaml

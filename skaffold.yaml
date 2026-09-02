@@ -107,6 +107,13 @@ profiles:
   - op: replace
     path: /build/artifacts/7/docker/dockerfile
     value: Dockerfile.debug
+# Additive: composes with any treatment profile (-p wasi-tcp,frontend-metrics).
+# Campaign-wide only — see kustomize/addons/frontend-metrics/kustomization.yaml.
+- name: frontend-metrics
+  patches:
+  - op: add
+    path: /manifests/kustomize/paths/-
+    value: kustomize/addons/frontend-metrics
 - name: baseline
   patches:
   - op: replace

@@ -97,6 +97,13 @@ spec:
           # As part of an optional Google Cloud demo, you can run an optional microservice called the "packaging service".
           # - name: PACKAGING_SERVICE_URL
           #   value: "" # This value would look like "http://123.123.123"
+          # Campaign-wide switches (ENABLE_METRICS) live in a ConfigMap that only
+          # kustomize/addons/frontend-metrics creates; absent, this is a no-op and
+          # the frontend runs exactly the configuration the published numbers used.
+          envFrom:
+          - configMapRef:
+              name: frontend-flags
+              optional: true
           resources:
             requests:
               cpu: 100m

@@ -1,0 +1,25 @@
+# Picked up by base/frontend.yaml's optional envFrom.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-flags
+data:
+  ENABLE_METRICS: "1"
+---
+# /metrics is served on the frontend's existing http port, so no Service change.
+# Lands in the SUT namespace (skaffold -n); the shared kube-prometheus-stack
+# values discover ServiceMonitors in every namespace (WP-A6).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: frontend
+  labels:
+    release: kube-prometheus-stack
+spec:
+  selector:
+    matchLabels:
+      app: frontend
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 10s   # matches prometheus.scrapeInterval in experimentes/deploy/configurations/
