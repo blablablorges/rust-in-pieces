@@ -54,7 +54,6 @@ impl RecommendationService for RecommendationServiceImpl {
 // ---------------------------------------------------------------------------
 
 fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
-    println!("[DEBUG] call_list_products: addr={}", addr);
 
     let empty = Empty {};
     let mut proto_buf = Vec::new();
@@ -91,7 +90,6 @@ fn call_list_products(addr: &str) -> Result<ListProductsResponse, String> {
         .map_err(|_| "get body failed".to_string())?;
     let stream = body.write().map_err(|_| "get write stream failed".to_string())?;
 
-    println!("[DEBUG] calling wasi::http::outgoing_handler::handle");
     let future_response = wasi::http::outgoing_handler::handle(request, None)
         .map_err(|e| format!("outgoing handle error: {:?}", e))?;
 

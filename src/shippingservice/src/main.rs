@@ -21,7 +21,6 @@ struct ShippingServiceImpl;
 #[tonic::async_trait]
 impl ShippingService for ShippingServiceImpl {
     async fn get_quote(&self, request: Request<GetQuoteRequest>) -> Result<Response<GetQuoteResponse>, Status> {
-        println!("Received GetQuoteRequest");
 
         let itemcount: u32 = request.get_ref().items.iter().map(|item| item.quantity as u32).sum();
 
@@ -38,7 +37,6 @@ impl ShippingService for ShippingServiceImpl {
     }
 
     async fn ship_order(&self, request: Request<ShipOrderRequest>) -> Result<Response<ShipOrderResponse>, Status> {
-        println!("Received ShipOrderRequest");
 
         let address = request.get_ref().address.as_ref()
             .ok_or_else(|| Status::invalid_argument("Address is required"))?;

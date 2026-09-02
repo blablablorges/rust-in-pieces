@@ -65,7 +65,7 @@ Each `*serwasm` crate contains:
 - `src/main.rs` — **Wasm guest**: implements gRPC service logic using `wasi_grpc_server::grpc_component` macro. Compiled to `.wasm` component targeting `wasm32-wasip2`. Has no system dependencies (uses WASI sockets/HTTP for Redis and outbound calls).
 - `bin/serve.rs` — **Native host**: loads and runs the `.wasm` component via wasmtime, exposes gRPC over TCP. Uses `wasmtime`, `wasmtime-wasi`, `wasmtime-wasi-http`.
 - `bin/server.rs` — **Native standalone**: same gRPC interface, standard Rust deps (tokio, redis crate). Used for the containerized baseline and Docker images.
-- `lib/wasi-grpc-server/` — proc-macro crate that implements the `#[grpc_component]` attribute, wiring tonic gRPC dispatch into the WASI HTTP incoming-handler interface.
+- `src/lib/wasi-grpc-server/` (one copy, shared by all `*serwasm` crates via path dependency) — proc-macro crate that implements the `#[grpc_component]` attribute, wiring tonic gRPC dispatch into the WASI HTTP incoming-handler interface.
 
 The Cargo.toml uses `[target.'cfg(not(target_family = "wasm"))'.dependencies]` to gate native-only deps (wasmtime, tokio, redis) out of the Wasm build.
 

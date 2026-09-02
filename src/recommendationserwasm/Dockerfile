@@ -17,6 +17,7 @@ FROM --platform=$BUILDPLATFORM mirror.gcr.io/rust:1.85-bookworm AS builder
 RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
 COPY protos /build/protos
+COPY src/lib /build/src/lib
 COPY src/recommendationserwasm/ /build/src/recommendationserwasm/
 
 WORKDIR /build/src/recommendationserwasm

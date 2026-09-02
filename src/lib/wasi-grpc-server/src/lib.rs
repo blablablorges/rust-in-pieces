@@ -44,15 +44,15 @@ pub fn grpc_component(attr: TokenStream, item: TokenStream) -> TokenStream {
 
             impl ::wasi::exports::http::incoming_handler::Guest for #wasi_implementor {
                 fn handle(request: ::wasi::exports::http::incoming_handler::IncomingRequest, response_out: ::wasi::exports::http::incoming_handler::ResponseOutparam) {
-                    static INIT: ::std::sync::Once = ::std::sync::Once::new();
-                    INIT.call_once(|| {
-                        println!(concat!(stringify!(#http_impl_struct_name), " gRPC component initialized and ready to handle requests"));
-                    });
-                    println!(concat!(stringify!(#http_impl_struct_name), " handling incoming request"));
+                    // No per-request stdout/stderr: the shim instantiates a fresh guest per
+                    // request, so even a Once-guarded "initialized" line fires every time,
+                    // and the native baselines log nothing per request (WP-A1).
                     let registry = ::wasi_hyperium::poll::Poller::default();
                     let server = super::#server_type::new(super::#http_impl_struct_name);
-                    let e = ::wasi_hyperium::hyperium1::handle_service_call(server, request, response_out, registry);
-                    e.unwrap();
+                    match ::wasi_hyperium::hyperium1::handle_service_call(server, request, response_out, registry) {
+                        Ok(()) => {}
+                        Err(e) => eprintln!(concat!(stringify!(#http_impl_struct_name), " handle_service_call error: {:?}"), e),
+                    }
                 }
             }
         }

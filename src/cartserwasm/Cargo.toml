@@ -20,7 +20,7 @@ path = "src/main.rs"
 [dependencies]
 tonic = { version = "0.13.1", features = ["codegen", "prost", "router"], default-features = false }
 prost = "0.13.5"
-wasi-grpc-server = { path = "./lib/wasi-grpc-server" }
+wasi-grpc-server = { path = "../lib/wasi-grpc-server" }
 wasi = "0.13.1"
 wasi-hyperium = "0.3.0"
 wit-bindgen = "0.51"
