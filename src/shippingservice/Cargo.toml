@@ -5,10 +5,6 @@ edition = "2021"
 
 
 [[bin]]
-name = "shipping-server"
-path = "src/main.rs"
-
-[[bin]]
 name = "shipping-client"
 path = "src/client.rs"
 
@@ -21,7 +17,6 @@ tokio = { version = "1.0", features = ["rt-multi-thread", "macros", "sync", "tim
 async-stream = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-rand = "0.8"
 tonic-prost = "0.14.2"
 
 [build-dependencies]

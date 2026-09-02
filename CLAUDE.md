@@ -31,7 +31,10 @@ cargo build --bin server --release
 
 Required toolchain: `rustup target add wasm32-wasip2`
 
-### Native Rust shipping service (non-Wasm baseline)
+### Shipping gRPC test client
+
+`src/shippingservice` is only the `shipping-client` test binary now; the container baseline
+for shipping is `shippingserwasm`'s `bin/server.rs`, same as cart and recommendation (WP-A3).
 
 ```sh
 cd src/shippingservice
@@ -85,7 +88,7 @@ Both host (`serve.rs`, wasmtime bindgen) and guest (`main.rs`, wit_bindgen) gene
 | `recommendationserwasm` | Rust/Wasm | Product recommendations — outbound gRPC to productcatalog via WASI HTTP |
 | `cartserwasm` | Rust/Wasm | Shopping cart — Redis via WASI sockets |
 | `syntheticservicewasm` | Rust/Wasm | Benchmark-only synthetic service — exercises compute/network/data workloads |
-| `shippingservice` | Rust (native) | Original Rust rewrite of the Go shipping service; also provides `shipping-client` test binary |
+| `shippingservice` | Rust (native) | Only the `shipping-client` test binary; the shipping baseline image is built from `shippingserwasm`'s `bin/server.rs` |
 | All others | Go/Python/Node/Java/C# | Upstream Google microservices, unchanged |
 
 ### Kustomize overlays (`./kustomize/overlays/`)

@@ -46,7 +46,7 @@ spec:
         ports:
         - containerPort: 50051
         env:
-        - name: SHIPPING_PORT
+        - name: PORT
           value: "50051"
         resources:
           requests:

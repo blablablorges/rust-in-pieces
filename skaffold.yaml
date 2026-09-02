@@ -47,7 +47,7 @@ build:
   - image: shippingservice
     context: .
     docker:
-      dockerfile: src/shippingservice/Dockerfile
+      dockerfile: src/shippingserwasm/Dockerfile
       cacheFrom:
         - shippingservice
   - image: checkoutservice
