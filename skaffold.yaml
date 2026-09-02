@@ -142,3 +142,38 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/synthetic-wasm
+- name: baseline-with-autoscaling
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/baseline-with-autoscaling
+- name: wasi-vanilla-with-autoscaling
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/wasi-vanilla-with-autoscaling
+- name: wasi-grpc-with-autoscaling
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/wasi-grpc-with-autoscaling
+- name: wasi-tcp-with-autoscaling
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/wasi-tcp-with-autoscaling
+- name: wasi-runtime-full-with-autoscaling
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/wasi-all-with-autoscaling
+- name: synthetic-baseline-with-autoscaling
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/synthetic-baseline-with-autoscaling
+- name: synthetic-wasm-with-autoscaling
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/synthetic-wasm-with-autoscaling
