@@ -27,8 +27,6 @@ spec:
     spec:
       containers:
       - env:
-        - name: RUST_LOG
-          value: info,wasi_grpc_server=debug
         - name: WASMTIME_HTTP_PROXY_SOCKET_ADDR
           value: "8080"
         - name: WASMTIME_HTTP_PROXY_ENABLE

@@ -31,8 +31,6 @@ spec:
         # containerd-shim-wasmtime/src/raw_tcp.rs RawTcpConfig::from_env.
         - name: WASMTIME_RAWTCP_UPSTREAMS
           value: "redis-cart:6379=resp"
-        - name: RUST_LOG
-          value: info,wasi_grpc_server=debug
         - name: WASMTIME_HTTP_PROXY_SOCKET_ADDR
           value: "0.0.0.0:7070"
         - name: WASMTIME_HTTP_PROXY_ENABLE
