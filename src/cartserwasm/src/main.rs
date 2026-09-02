@@ -6,6 +6,34 @@ pub mod hipstershop {
 
 mod core;
 
+// Host-pooled raw-TCP (Redis) import. The shim implements this interface,
+// owning the connection pool and RESP reply framing, so the guest no longer
+// opens a socket per command. Generated with the same wit-bindgen the `wasi`
+// crate uses, so they share one wit-bindgen-rt runtime (no duplicate symbols).
+mod pooled_tcp_bindings {
+    wit_bindgen::generate!({
+        inline: r#"
+package hybrid:microservices;
+
+interface pooled-tcp {
+  variant tcp-error {
+    unknown-upstream(string),
+    connect-failed(string),
+    timeout,
+    protocol(string),
+    io(string),
+  }
+  request: func(upstream: string, payload: list<u8>) -> result<list<u8>, tcp-error>;
+}
+
+world pooled-tcp-client {
+  import pooled-tcp;
+}
+"#,
+    });
+}
+use pooled_tcp_bindings::hybrid::microservices::pooled_tcp;
+
 use core::CartStore;
 use hipstershop::cart_service_server::{CartService, CartServiceServer};
 use hipstershop::{AddItemRequest, Cart, Empty, EmptyCartRequest, GetCartRequest};
@@ -87,47 +115,6 @@ fn resp_encode(args: &[&[u8]]) -> Vec<u8> {
     buf
 }
 
-fn read_resp_response(input: &wasi::io::streams::InputStream) -> Result<Vec<u8>, String> {
-    let mut buf = Vec::new();
-    loop {
-        match input.blocking_read(4096) {
-            Ok(chunk) => {
-                buf.extend_from_slice(&chunk);
-                if resp_is_complete(&buf) {
-                    return Ok(buf);
-                }
-            }
-            Err(wasi::io::streams::StreamError::Closed) => return Ok(buf),
-            Err(e) => return Err(format!("read error: {:?}", e)),
-        }
-    }
-}
-
-fn resp_is_complete(buf: &[u8]) -> bool {
-    if buf.is_empty() {
-        return false;
-    }
-    match buf[0] {
-        b'+' | b'-' | b':' => buf.windows(2).any(|w| w == b"\r\n"),
-        b'$' => {
-            if let Some(pos) = buf.windows(2).position(|w| w == b"\r\n") {
-                let len_str = std::str::from_utf8(&buf[1..pos]).unwrap_or("");
-                if let Ok(len) = len_str.parse::<i64>() {
-                    if len < 0 {
-                        return true;
-                    }
-                    buf.len() >= pos + 2 + len as usize + 2
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        }
-        _ => buf.windows(2).any(|w| w == b"\r\n"),
-    }
-}
-
 fn parse_bulk_string(buf: &[u8]) -> Result<Option<Vec<u8>>, String> {
     if buf.is_empty() {
         return Err("empty response".into());
@@ -157,111 +144,13 @@ fn parse_bulk_string(buf: &[u8]) -> Result<Option<Vec<u8>>, String> {
     Ok(Some(buf[data_start..data_end].to_vec()))
 }
 
-/// Try to resolve a hostname, attempting Kubernetes FQDN suffixes if needed.
-fn resolve_host(host: &str) -> Result<wasi::sockets::network::IpAddress, String> {
-    // If host is already an IP address, parse it directly
-    if let Ok(v4) = host.parse::<std::net::Ipv4Addr>() {
-        let o = v4.octets();
-        return Ok(wasi::sockets::network::IpAddress::Ipv4((o[0], o[1], o[2], o[3])));
-    }
-    if let Ok(v6) = host.parse::<std::net::Ipv6Addr>() {
-        let s = v6.segments();
-        return Ok(wasi::sockets::network::IpAddress::Ipv6((
-            s[0], s[1], s[2], s[3], s[4], s[5], s[6], s[7],
-        )));
-    }
-
-    // Build a list of names to try: original, then Kubernetes FQDN variants
-    let kube_ns = std::env::var("KUBE_NAMESPACE").unwrap_or_default();
-    let mut names = vec![host.to_string()];
-    if !host.contains('.') {
-        // Short name — try Kubernetes DNS suffixes
-        if !kube_ns.is_empty() {
-            names.push(format!("{}.{}.svc.cluster.local", host, kube_ns));
-        }
-        // Also try without namespace (relies on cluster DNS default)
-        names.push(format!("{}.svc.cluster.local", host));
-    }
-
-    let net = wasi::sockets::instance_network::instance_network();
-    let mut last_err = String::new();
-    for name in &names {
-        match wasi::sockets::ip_name_lookup::resolve_addresses(&net, name) {
-            Ok(addrs) => {
-                addrs.subscribe().block();
-                match addrs.resolve_next_address() {
-                    Ok(Some(ip)) => return Ok(ip),
-                    Ok(None) => last_err = format!("no addresses for: {}", name),
-                    Err(e) => last_err = format!("DNS error for {}: {:?}", name, e),
-                }
-            }
-            Err(e) => last_err = format!("DNS resolve error for {}: {:?}", name, e),
-        }
-    }
-    Err(last_err)
-}
-
 fn redis_command(args: &[&[u8]]) -> Result<Vec<u8>, String> {
-    let addr_str = redis_addr();
-    let (host, port) = parse_host_port(&addr_str)?;
-
-    let ip = resolve_host(&host)?;
-
-    let sock = match &ip {
-        wasi::sockets::network::IpAddress::Ipv4(_) => {
-            wasi::sockets::tcp_create_socket::create_tcp_socket(
-                wasi::sockets::network::IpAddressFamily::Ipv4,
-            )
-        }
-        wasi::sockets::network::IpAddress::Ipv6(_) => {
-            wasi::sockets::tcp_create_socket::create_tcp_socket(
-                wasi::sockets::network::IpAddressFamily::Ipv6,
-            )
-        }
-    }
-    .map_err(|e| format!("create socket error: {:?}", e))?;
-
-    let remote = match ip {
-        wasi::sockets::network::IpAddress::Ipv4(a) => {
-            wasi::sockets::network::IpSocketAddress::Ipv4(
-                wasi::sockets::network::Ipv4SocketAddress { address: a, port },
-            )
-        }
-        wasi::sockets::network::IpAddress::Ipv6(a) => {
-            wasi::sockets::network::IpSocketAddress::Ipv6(
-                wasi::sockets::network::Ipv6SocketAddress {
-                    address: a,
-                    port,
-                    flow_info: 0,
-                    scope_id: 0,
-                },
-            )
-        }
-    };
-
-    let net = wasi::sockets::instance_network::instance_network();
-    sock.start_connect(&net, remote)
-        .map_err(|e| format!("start_connect error: {:?}", e))?;
-    sock.subscribe().block();
-    let (input, output) = sock
-        .finish_connect()
-        .map_err(|e| format!("finish_connect error: {:?}", e))?;
-    output
-        .blocking_write_and_flush(&resp_encode(args))
-        .map_err(|e| format!("write error: {:?}", e))?;
-
-    read_resp_response(&input)
-}
-
-fn parse_host_port(addr: &str) -> Result<(String, u16), String> {
-    if let Some(colon) = addr.rfind(':') {
-        let port: u16 = addr[colon + 1..]
-            .parse()
-            .map_err(|_| format!("invalid port in: {}", addr))?;
-        Ok((addr[..colon].to_string(), port))
-    } else {
-        Ok((addr.to_string(), 6379))
-    }
+    // The shim's host-pooled raw-TCP middleware owns the connection and the RESP
+    // reply framing and returns one complete reply, so we just hand it the
+    // encoded request. Connection reuse / keepalive / liveness live host-side.
+    let addr = redis_addr();
+    let payload = resp_encode(args);
+    pooled_tcp::request(&addr, &payload).map_err(|e| format!("pooled-tcp request failed: {e:?}"))
 }
 
 fn redis_get(key: &str) -> Result<Option<Vec<u8>>, String> {

@@ -23,6 +23,7 @@ prost = "0.13.5"
 wasi-grpc-server = { path = "./lib/wasi-grpc-server" }
 wasi = "0.13.1"
 wasi-hyperium = "0.3.0"
+wit-bindgen = "0.51"
 
 # Dependencies ONLY for the server binary (native target)
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
