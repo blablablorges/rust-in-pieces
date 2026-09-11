@@ -87,6 +87,12 @@ build:
       dockerfile: src/syntheticservicewasm/Dockerfile
       cacheFrom:
         - syntheticservice
+  - image: syntheticservice-p3
+    context: .
+    docker:
+      dockerfile: src/syntheticservicep3/Dockerfile
+      cacheFrom:
+        - syntheticservice-p3
   # Wasm components (WP-H0). Same crates as the native images above, built by
   # hack/wasm-image.sh for wasm32-wasip2 and pushed to the registry like every
   # other artifact, so the manifests name them by artifact and skaffold rewrites
@@ -117,6 +123,13 @@ build:
     context: .
     custom:
       buildCommand: hack/wasm-image.sh src/syntheticservicewasm server.wasm --bin server
+      dependencies:
+        paths: [src/syntheticservicewasm/**, src/lib/**, protos/**]
+        ignore: ["**/target/**"]
+  - image: syntheticservicefork
+    context: ../rust-in-pieces-june
+    custom:
+      buildCommand: hack/wasm-image.sh src/syntheticservicewasm syntheticservicewasm.wasm --lib
       dependencies:
         paths: [src/syntheticservicewasm/**, src/lib/**, protos/**]
         ignore: ["**/target/**"]
@@ -191,6 +204,16 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/synthetic-wasm
+- name: synthetic-p3
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/synthetic-p3
+- name: synthetic-fork
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/synthetic-fork
 - name: baseline-with-autoscaling
   patches:
   - op: replace

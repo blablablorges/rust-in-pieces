@@ -109,8 +109,12 @@ impl WasiHttpView for Host {
 
 fn new_host(instance_id: u64, clients: &Clients) -> Host {
     let mut b = WasiCtxBuilder::new();
-    b.inherit_stdio().inherit_env().inherit_network().allow_ip_name_lookup(true);
+    b.inherit_stdio().inherit_env().inherit_network().allow_ip_name_lookup(true).allow_tcp(true).allow_udp(true);
     b.env("INSTANCE_ID", instance_id.to_string());
+    let tmp = std::env::var("WASIHOST_PREOPEN").unwrap_or_else(|_| "/tmp".into());
+    if let Err(e) = b.preopened_dir(&tmp, &tmp, wasmtime_wasi::FsPerms::ReadWrite) {
+        eprintln!("preopen {tmp}: {e}");
+    }
     Host { table: ResourceTable::new(), ctx: b.build(), http: WasiHttpCtx::new(), hooks: Hooks(clients.clone()) }
 }
 
