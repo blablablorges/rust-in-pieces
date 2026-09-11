@@ -95,7 +95,9 @@ mod __wasi_http {
         ) {
             let registry = ::wasi_hyperium::poll::Poller::default();
             let rest = axum::Router::new().route("/workload", axum::routing::post(super::rest_workload));
+            let (_reporter, health) = ::tonic_health::server::health_reporter();
             let routes = tonic::service::Routes::from(rest)
+                .add_service(health)
                 .add_service(super::SyntheticServiceServer::new(super::SyntheticServiceImpl));
             if let Err(e) = ::wasi_hyperium::hyperium1::handle_service_call(routes, request, response_out, registry) {
                 eprintln!("handle_service_call error: {:?}", e);
