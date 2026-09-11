@@ -60,8 +60,49 @@ impl DbClient for WasiDbClient {
 // gRPC component — delegates entirely to core
 // ---------------------------------------------------------------------------
 
-#[wasi_grpc_server::grpc_component(SyntheticServiceServer)]
 struct SyntheticServiceImpl;
+
+async fn rest_workload() -> axum::response::Response {
+    let config = WorkloadConfig::from_env();
+    let net = WasiNetworkClient {
+        addr: std::env::var("PRODUCT_CATALOG_SERVICE_ADDR").unwrap_or_else(|_| "localhost:3550".to_string()),
+    };
+    let db = WasiDbClient {
+        addr: std::env::var("REDIS_ADDR").unwrap_or_else(|_| "redis-cart:6379".to_string()),
+    };
+    let start = std::time::Instant::now();
+    let stressor_results = core::run_workload(&config, &net, &db).await;
+    let body = serde_json::json!({
+        "stressor_results": stressor_results,
+        "total_ms": start.elapsed().as_millis() as i64,
+    })
+    .to_string();
+    axum::response::Response::builder()
+        .status(200)
+        .header("content-type", "application/json")
+        .header("content-length", body.len())
+        .body(axum::body::Body::from(body))
+        .unwrap()
+}
+
+mod __wasi_http {
+    struct Guest;
+    ::wasi::http::proxy::export!(Guest);
+    impl ::wasi::exports::http::incoming_handler::Guest for Guest {
+        fn handle(
+            request: ::wasi::exports::http::incoming_handler::IncomingRequest,
+            response_out: ::wasi::exports::http::incoming_handler::ResponseOutparam,
+        ) {
+            let registry = ::wasi_hyperium::poll::Poller::default();
+            let rest = axum::Router::new().route("/workload", axum::routing::post(super::rest_workload));
+            let routes = tonic::service::Routes::from(rest)
+                .add_service(super::SyntheticServiceServer::new(super::SyntheticServiceImpl));
+            if let Err(e) = ::wasi_hyperium::hyperium1::handle_service_call(routes, request, response_out, registry) {
+                eprintln!("handle_service_call error: {:?}", e);
+            }
+        }
+    }
+}
 
 #[tonic::async_trait]
 impl SyntheticService for SyntheticServiceImpl {
