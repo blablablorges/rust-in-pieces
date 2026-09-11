@@ -95,6 +95,22 @@ impl SyntheticService for SyntheticServiceImpl {
     }
 }
 
+#[derive(serde::Serialize)]
+struct WorkloadJson {
+    stressor_results: std::collections::HashMap<String, String>,
+    total_ms: i64,
+}
+
+async fn rest_workload(
+    axum::extract::State(state): axum::extract::State<Arc<SyntheticServiceImpl>>,
+) -> axum::Json<WorkloadJson> {
+    let config = WorkloadConfig::from_env();
+    let db = NativeDbClient { client: (*state.redis_client).clone() };
+    let start = std::time::Instant::now();
+    let stressor_results = core::run_workload(&config, &state.net, &db).await;
+    axum::Json(WorkloadJson { stressor_results, total_ms: start.elapsed().as_millis() as i64 })
+}
+
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
@@ -163,9 +179,16 @@ async fn main() -> Result<()> {
         addr, catalog_addr, redis_addr
     );
 
-    Server::builder()
+    let service = Arc::new(service);
+    let rest = axum::Router::new()
+        .route("/workload", axum::routing::post(rest_workload))
+        .with_state(service.clone());
+    let routes = tonic::service::Routes::from(rest)
         .add_service(health_service)
-        .add_service(SyntheticServiceServer::new(service))
+        .add_service(SyntheticServiceServer::from_arc(service));
+    Server::builder()
+        .accept_http1(true)
+        .add_routes(routes)
         .serve_with_incoming(TcpListenerStream::new(listener))
         .await
         .context("gRPC server failed")?;
