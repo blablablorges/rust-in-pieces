@@ -237,11 +237,16 @@ impl wasip3::exports::http::handler::Guest for Component {
             .map(|v| v.starts_with("application/grpc"))
             .unwrap_or(false);
         if grpc {
+            let health = parts.uri.path().starts_with("/grpc.health.v1.Health/");
             let req = http::Request::from_parts(parts, Full::new(bytes));
-            let mut svc = SyntheticServiceServer::new(Svc::from_env());
-            let resp = tonic::codegen::Service::call(&mut svc, req)
-                .await
-                .map_err(|_| ErrorCode::InternalError(None))?;
+            let resp = if health {
+                let (_reporter, mut svc) = tonic_health::server::health_reporter();
+                tonic::codegen::Service::call(&mut svc, req).await
+            } else {
+                let mut svc = SyntheticServiceServer::new(Svc::from_env());
+                tonic::codegen::Service::call(&mut svc, req).await
+            }
+            .map_err(|_| ErrorCode::InternalError(None))?;
             return http_into_wasi_response(resp);
         }
         let (status, body) = if parts.method == http::Method::POST && parts.uri.path() == "/workload" {
