@@ -1,3 +1,5 @@
+# Identical to with-syntheticservice-wasm except image, runtimeClassName and the
+# WASIHOST_* knobs the A shim reads from the pod env.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -25,6 +27,7 @@ spec:
         app: syntheticservice
     spec:
       serviceAccountName: syntheticservice
+      runtimeClassName: wasmtime-p3
       securityContext:
         fsGroup: 1000
         runAsGroup: 1000

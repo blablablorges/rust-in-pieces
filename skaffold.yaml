@@ -90,9 +90,10 @@ build:
   - image: syntheticservice-p3
     context: .
     custom:
-      buildCommand: hack/p3-image.sh
+      buildCommand: hack/wasm-image.sh src/syntheticservicep3 syntheticservicep3.wasm --lib
       dependencies:
-        paths: [src/syntheticservicep3/src/**, src/syntheticservicep3/Cargo.toml, src/syntheticservicep3/Dockerfile.prebuilt, src/wasihost/src/**, src/wasihost/Cargo.toml, protos/**]
+        paths: [src/syntheticservicep3/**, protos/**]
+        ignore: ["**/target/**"]
   # Wasm components (WP-H0). Same crates as the native images above, built by
   # hack/wasm-image.sh for wasm32-wasip2 and pushed to the registry like every
   # other artifact, so the manifests name them by artifact and skaffold rewrites
