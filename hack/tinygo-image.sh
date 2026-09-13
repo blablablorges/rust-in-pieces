@@ -15,7 +15,7 @@ CRATE_DIR="$1"; MODULE="$2"; shift 2
 TAG="${IMAGE##*:}"; REF="${IMAGE%:*}"
 NAME="${REF##*/}"; REPO="${REF%/*}"
 
-(cd "${BUILD_CONTEXT}/${CRATE_DIR}" && tinygo build -target ./wasip2-synthetic.json -o "${MODULE}" .)
+(cd "${BUILD_CONTEXT}/${CRATE_DIR}" && tinygo build -opt=2 -target ./wasip2-synthetic.json -o "${MODULE}" .)
 WASM="${BUILD_CONTEXT}/${CRATE_DIR}/${MODULE}"
 [[ -f "$WASM" ]] || { echo "no ${WASM} after tinygo build" >&2; exit 1; }
 
