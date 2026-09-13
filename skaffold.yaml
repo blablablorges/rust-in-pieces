@@ -71,6 +71,22 @@ build:
       dockerfile: src/cartserwasm/Dockerfile
       cacheFrom:
         - cartservice
+  # Upstream-language anchors for the per-service campaign (Go, Python, C#); own row, never a pair partner.
+  - image: shippingservice-upstream
+    context: src/shippingservice-go
+    docker:
+      cacheFrom:
+        - shippingservice-upstream
+  - image: recommendationservice-upstream
+    context: src/recommendationservice
+    docker:
+      cacheFrom:
+        - recommendationservice-upstream
+  - image: cartservice-upstream
+    context: src/cartservice/src
+    docker:
+      cacheFrom:
+        - cartservice-upstream
   - image: frontend
     context: src/frontend
     docker:
@@ -196,6 +212,11 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/baseline
+- name: upstream
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/upstream
 - name: wasi-vanilla
   patches:
   - op: replace

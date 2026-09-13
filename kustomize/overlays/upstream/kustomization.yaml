@@ -1,0 +1,13 @@
+# Upstream-language anchor row: shipping (Go), recommendation (Python), cart (C#) as upstream ships them; synthetic native.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base          # or ../../base if you have a base folder
+
+components:
+  - ../../components/with-shipping-upstream
+  - ../../components/with-recommendation-upstream
+  - ../../components/with-cart-upstream
+  - ../../components/with-syntheticservice-docker
+  - ../../components/with-node-selector
