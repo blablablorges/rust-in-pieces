@@ -36,16 +36,17 @@ impl Client {
     }
 
     /// Send `payload`, read until `done` reports a whole reply, return that reply.
-    /// A failure on the held connection drops it and dials once more.
+    /// A failure, or a cancelled request, drops the held socket instead of leaving it
+    /// half-read; either way the next call dials once more.
     pub async fn roundtrip<F>(&self, payload: &[u8], done: F) -> Result<Vec<u8>, String>
     where
         F: Fn(&[u8]) -> Result<Option<usize>, String>,
     {
         let mut guard = self.conn.lock().await;
-        if let Some(c) = guard.as_mut() {
-            match exchange(c, payload, &done).await {
-                Ok(reply) => return Ok(reply),
-                Err(_) => *guard = None,
+        if let Some(mut c) = guard.take() {
+            if let Ok(reply) = exchange(&mut c, payload, &done).await {
+                *guard = Some(c);
+                return Ok(reply);
             }
         }
         let mut c = self.dial().await?;

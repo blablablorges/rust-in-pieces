@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# WP-J2: identical to components/with-cart-docker/cartservice.yaml except image
-# and runtimeClassName. The guest owns its own listener on 7070 and dials Redis
-# itself over wasi:sockets, so there is no host-side proxy and no WASMTIME_* env.
-# with-cart-wasm with image, runtimeClassName and the WASIHOST_* knobs changed.
+# with-cart-wasm with image, runtimeClassName and the WASIHOST_* knobs changed, plus an
+# explicit PORT env (the host reads it; the P2 binary defaults it). Under wasmtime-p3
+# the host proxy owns the listener on PORT and instantiates the guest per concurrent
+# request (reuse unbounded), so per-instance state (datastore sockets; geo's index) is
+# built per instance, not once per pod.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
