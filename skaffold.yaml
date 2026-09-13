@@ -171,6 +171,14 @@ build:
       dependencies:
         paths: [src/syntheticservicewasm/**, src/lib/**, protos/**]
         ignore: ["**/target/**"]
+  # TinyGo synthetic guest (wasi:http 0.2 proxy component), built by hack/tinygo-image.sh.
+  - image: syntheticservicetinygo
+    context: .
+    custom:
+      buildCommand: hack/tinygo-image.sh src/syntheticservicetinygo synthetic.wasm
+      dependencies:
+        paths: [src/syntheticservicetinygo/**]
+        ignore: ["**/*.wasm"]
   tagPolicy:
     gitCommit: {}
   local:
@@ -262,6 +270,11 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/synthetic-wasm
+- name: synthetic-tinygo
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/synthetic-tinygo
 - name: synthetic-p3
   patches:
   - op: replace

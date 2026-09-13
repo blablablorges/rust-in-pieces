@@ -1,0 +1,11 @@
+# Synthetic service in TinyGo under the stock shim's proxy mode, standalone (no boutique base).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base          # or ../../base if you have a base folder
+
+components:
+  - ../../components/with-syntheticservice-tinygo
+  - ../../components/with-node-selector
+  - ../../components/without-base
