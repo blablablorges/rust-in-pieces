@@ -8,6 +8,8 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
 	pb "./genproto"
@@ -57,7 +59,9 @@ func (s *server) ShipOrder(ctx context.Context, in *pb.ShipOrderRequest) (*pb.Sh
 
 func main() {
 	port := default_port
-	if value, ok := os.LookupEnv("APP_PORT"); ok {
+	if value, ok := os.LookupEnv("PORT"); ok {
+		port = value
+	} else if value, ok := os.LookupEnv("APP_PORT"); ok {
 		port = value
 	}
 	port = fmt.Sprintf(":%s", port)
@@ -69,6 +73,11 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterShippingServiceServer(s, &server{})
 	log.Printf("Shipping Service listening on port %s", port)
+
+	// Register health service so kubelet's gRPC readiness probe (empty service name) passes.
+	healthSrv := health.NewServer()
+	healthpb.RegisterHealthServer(s, healthSrv)
+	healthSrv.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
 
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
