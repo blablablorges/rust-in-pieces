@@ -79,18 +79,21 @@ pub fn run_cpu(level: Level) -> String {
 pub fn run_memory(level: Level) -> String {
     let size: usize = match level {
         Level::None => return "skipped".into(),
-        Level::Mid => 16 * 1024 * 1024,
-        Level::High => 128 * 1024 * 1024,
+        Level::Mid => 1024 * 1024,
+        Level::High => 8 * 1024 * 1024,
     };
-    // Allocate and touch every 4 KiB page to force physical allocation.
-    let mut buf: Vec<u8> = vec![0xABu8; size];
+    // Allocate, fill, and read one byte per 4 KiB page. black_box keeps the buffer and the
+    // checksum observable: without it LLVM proved the old 128 MiB buffer dead and the mode
+    // cost nothing (measured 2026-09-13). Sizes are per in-flight request; 8 MiB keeps the
+    // hold profile's 256 in flight under the pods' 1024Mi limit.
+    let mut buf: Vec<u8> = vec![std::hint::black_box(0xABu8); size];
     let mut checksum: u64 = 0;
     for chunk in buf.chunks(4096) {
         checksum = checksum.wrapping_add(chunk[0] as u64);
     }
-    buf[0] = (checksum & 0xFF) as u8; // prevent dead-code elimination
-    drop(buf);
-    format!("allocated and touched {} MiB", size / (1024 * 1024))
+    buf[0] = (checksum & 0xFF) as u8;
+    std::hint::black_box(&buf);
+    format!("allocated and touched {} MiB, checksum {}", size / (1024 * 1024), checksum)
 }
 
 /// Uses std::fs which maps to WASI filesystem on wasm32-wasip2.
