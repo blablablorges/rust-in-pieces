@@ -73,7 +73,10 @@ impl wasip3::exports::http::handler::Guest for Component {
             let (_reporter, mut svc) = tonic_health::server::health_reporter();
             tonic::codegen::Service::call(&mut svc, req).await
         } else {
-            let store = store().map_err(|_| ErrorCode::InternalError(None))?;
+            let store = store().map_err(|e| {
+                eprintln!("cart store: {e}");
+                ErrorCode::InternalError(None)
+            })?;
             let mut svc = CartServiceServer::new(Svc(store));
             tonic::codegen::Service::call(&mut svc, req).await
         }
