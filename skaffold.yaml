@@ -177,7 +177,8 @@ build:
     custom:
       buildCommand: hack/tinygo-image.sh src/syntheticservicetinygo synthetic.wasm
       dependencies:
-        paths: [src/syntheticservicetinygo/**]
+        # the script carries the build flags (-opt); skaffold's cache keys on these paths only
+        paths: [src/syntheticservicetinygo/**, hack/tinygo-image.sh]
         ignore: ["**/*.wasm"]
   tagPolicy:
     gitCommit: {}
