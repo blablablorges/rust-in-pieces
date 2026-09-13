@@ -1,6 +1,5 @@
 //! Shipping as a wasi:http 0.3 handler: gRPC (ShippingService) and health on one port.
 //! The service logic is the P2 crate's core.rs, included by path.
-use bytes::Bytes;
 use http_body_util::{BodyExt, Full};
 use tonic::{Request, Response, Status};
 use wasip3::http::types::{ErrorCode, Request as WasiRequest, Response as WasiResponse};
