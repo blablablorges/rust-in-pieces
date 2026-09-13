@@ -57,6 +57,8 @@ spec:
           periodSeconds: 2
           failureThreshold: 3
         env:
+        - name: PORT
+          value: "7070"
         - name: REDIS_ADDR
           value: "redis-cart:6379"
         - name: WASIHOST_INSTANCE_REUSE
