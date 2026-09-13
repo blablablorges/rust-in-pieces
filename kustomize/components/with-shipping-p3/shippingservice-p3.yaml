@@ -1,0 +1,74 @@
+# with-shipping-wasm with image, runtimeClassName and the WASIHOST_* knobs changed.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shippingservice
+  labels:
+    app: shippingservice
+spec:
+  selector:
+    matchLabels:
+      app: shippingservice
+  template:
+    metadata:
+      labels:
+        app: shippingservice
+    spec:
+      runtimeClassName: wasmtime-p3
+      serviceAccountName: shippingservice
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+      - name: server
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          privileged: false
+          readOnlyRootFilesystem: true
+        image: shippingserp3
+        ports:
+        - containerPort: 50051
+        readinessProbe:
+          grpc:
+            port: 50051
+          periodSeconds: 2
+          failureThreshold: 3
+        env:
+        - name: PORT
+          value: "50051"
+        - name: WASIHOST_INSTANCE_REUSE
+          value: "0"
+        - name: WASIHOST_INSTANCE_CONCURRENCY
+          value: "16"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 1000m
+            memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shippingservice
+  labels:
+    app: shippingservice
+spec:
+  type: ClusterIP
+  selector:
+    app: shippingservice
+  ports:
+  - name: grpc
+    port: 50051
+    targetPort: 50051
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: shippingservice

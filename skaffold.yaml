@@ -94,6 +94,13 @@ build:
       dependencies:
         paths: [src/syntheticservicep3/**, protos/**]
         ignore: ["**/target/**"]
+  - image: shippingserp3
+    context: .
+    custom:
+      buildCommand: hack/wasm-image.sh src/shippingserp3 shippingserp3.wasm --lib
+      dependencies:
+        paths: [src/shippingserp3/**, src/shippingserwasm/src/**, protos/**]
+        ignore: ["**/target/**"]
   # Wasm components (WP-H0). Same crates as the native images above, built by
   # hack/wasm-image.sh for wasm32-wasip2 and pushed to the registry like every
   # other artifact, so the manifests name them by artifact and skaffold rewrites
@@ -180,6 +187,11 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/wasi-vanilla
+- name: p3-vanilla
+  patches:
+  - op: replace
+    path: /manifests/kustomize/paths/0
+    value: kustomize/overlays/p3-vanilla
 - name: wasi-grpc
   patches:
   - op: replace

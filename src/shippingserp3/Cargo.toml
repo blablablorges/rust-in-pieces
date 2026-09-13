@@ -1,0 +1,30 @@
+[package]
+name = "shippingserp3"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasip3 = { version = "0.9", features = ["http-compat"] }
+wit-bindgen = { version = "0.62", features = ["async-spawn", "inter-task-wakeup"] }
+tonic = { version = "0.14", default-features = false, features = ["codegen"] }
+tonic-prost = "0.14"
+tonic-health = "0.14"
+prost = "0.14"
+http = "1"
+http-body-util = "0.1"
+http-body = "1"
+bytes = "1"
+futures = "0.3"
+fastrand = "2.0"
+
+[build-dependencies]
+tonic-prost-build = "0.14"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"

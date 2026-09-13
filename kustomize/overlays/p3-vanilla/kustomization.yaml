@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../base          # or ../../base if you have a base folder
+
+components:
+  - ../../components/with-shipping-p3
+  - ../../components/with-recommendation-docker
+  - ../../components/with-syntheticservice-docker
+  - ../../components/with-cart-docker
+  - ../../components/with-node-selector
