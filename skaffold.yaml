@@ -164,13 +164,6 @@ build:
       dependencies:
         paths: [src/syntheticservicewasm/**, src/lib/**, protos/**]
         ignore: ["**/target/**"]
-  - image: syntheticservicefork
-    context: ../rust-in-pieces-june
-    custom:
-      buildCommand: hack/wasm-image.sh src/syntheticservicewasm syntheticservicewasm.wasm --lib
-      dependencies:
-        paths: [src/syntheticservicewasm/**, src/lib/**, protos/**]
-        ignore: ["**/target/**"]
   # TinyGo synthetic guest (wasi:http 0.2 proxy component), built by hack/tinygo-image.sh.
   - image: syntheticservicetinygo
     context: .
@@ -286,6 +279,19 @@ profiles:
   - op: replace
     path: /manifests/kustomize/paths/0
     value: kustomize/overlays/synthetic-fork
+  # Only this overlay deploys the June guest, and it is the one artifact built from a
+  # sibling worktree (../rust-in-pieces-june). In the default list every campaign built
+  # the ablation, and a missing or stale worktree failed builds that never deploy it.
+  - op: add
+    path: /build/artifacts/-
+    value:
+      image: syntheticservicefork
+      context: ../rust-in-pieces-june
+      custom:
+        buildCommand: hack/wasm-image.sh src/syntheticservicewasm syntheticservicewasm.wasm --lib
+        dependencies:
+          paths: [src/syntheticservicewasm/**, src/lib/**, protos/**]
+          ignore: ["**/target/**"]
 - name: baseline-with-autoscaling
   patches:
   - op: replace
