@@ -103,10 +103,32 @@ fn json(results: &HashMap<String, String>, total_ms: i64) -> String {
         if i > 0 {
             s.push(',');
         }
-        s.push_str(&format!("\"{}\":\"{}\"", k.escape_default(), v.escape_default()));
+        s.push_str(&format!("\"{}\":\"{}\"", json_escape(k), json_escape(v)));
     }
     s.push_str(&format!("}},\"total_ms\":{total_ms}}}"));
     s
+}
+
+fn json_escape(v: &str) -> String {
+    let mut out = String::with_capacity(v.len());
+    for c in v.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn json_keeps_utf8_and_escapes_what_json_requires() {
+        assert_eq!(super::json_escape("found 17984 primes ≤ 200000"), "found 17984 primes ≤ 200000");
+        assert_eq!(super::json_escape("a\"b\\c\n"), "a\\\"b\\\\c\\u000a");
+    }
 }
 
 struct Component;
