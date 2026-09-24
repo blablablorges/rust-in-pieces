@@ -1,7 +1,7 @@
-# with-syntheticservice-wasm with the TinyGo guest: a wasi:http 0.2 proxy component under the
-# stock shim's proxy mode (the host listens on WASMTIME_HTTP_PROXY_SOCKET_ADDR and instantiates
-# the guest per request). No gRPC server exists in TinyGo's wasip2, so the probe is HTTP and the
-# tester uses its HTTP mode; this guest has no pair.
+# with-syntheticservice-wasm with the TinyGo guest: a wasi:http 0.2 proxy component under our
+# p3 shim's proxy mode (the host listens on WASMTIME_HTTP_PROXY_SOCKET_ADDR and reuses guest
+# instances across requests). No gRPC server exists in TinyGo's wasip2, so the probe is HTTP and
+# the tester uses its HTTP mode; this guest has no pair.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -28,7 +28,7 @@ spec:
       labels:
         app: syntheticservice
     spec:
-      runtimeClassName: wasmtime
+      runtimeClassName: wasmtime-p3
       serviceAccountName: syntheticservice
       securityContext:
         fsGroup: 1000
@@ -52,6 +52,8 @@ spec:
         - name: WASMTIME_HTTP_PROXY_SOCKET_ADDR
           value: "0.0.0.0:50055"
         - name: PRODUCT_CATALOG_SERVICE_ADDR
+          value: "productcatalogservice:3550"
+        - name: WASIHOST_H2C_AUTHORITIES
           value: "productcatalogservice:3550"
         - name: REDIS_ADDR
           value: "redis-cart:6379"
